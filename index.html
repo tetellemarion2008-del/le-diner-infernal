@@ -46,7 +46,7 @@
                 <div>
                     <label class="block text-xs uppercase text-gray-400 mb-1">Mode de jeu (Si tu crées le salon)</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <button type="button" onclick="setGameMode('table')" id="btn-mode-table" class="bg-red-600 border border-red-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">🍽️ À Table</button>
+                        <button type="button" onclick="setGameMode('table')" id="btn-mode-table" class="bg-red-600 border border-red-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">🍽 À Table</button>
                         <button type="button" onclick="setGameMode('party')" id="btn-mode-party" class="bg-gray-800 border border-gray-700 text-gray-400 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">☕ Pause Entre Amis</button>
                     </div>
                 </div>
@@ -135,7 +135,22 @@
 
             <!-- NOTIFICATION CIBLE ATTRAPÉE -->
             <div id="target-notification" class="hidden mb-4 bg-red-900/90 border-2 border-yellow-400 text-yellow-200 p-3 rounded-xl text-center font-bold text-sm animate-bounce shadow-xl">
-                ⚠️️ <span id="notification-text">Quelqu'un a deviné votre objectif !</span>
+                ⚠ <span id="notification-text">Quelqu'un a deviné votre objectif !</span>
+            </div>
+
+            <!-- MODAL DE CONFIRMATION DÉFI HARD -->
+            <div id="hard-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-gray-900 border-2 border-red-600 rounded-2xl p-6 max-w-xs text-center glow-box space-y-4">
+                    <h3 class="text-lg font-black text-red-500 uppercase glow-red">🔥 ATTENTION DÉFI HARD 🔥</h3>
+                    <p id="hard-modal-text" class="text-xs text-gray-300 leading-relaxed"></p>
+                    <div class="bg-red-950/50 border border-red-500/40 rounded-xl p-2 text-[11px] text-red-300">
+                        ⚡ Ce défi compte DOUBLE : rapporte <strong>4 points</strong> en cas de réussite (contre 2 points pour un normal).
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="acceptHardChallenge(true)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer shadow-lg">J'accepte ! 💪</button>
+                        <button onclick="acceptHardChallenge(false)" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">Refuser 🔄</button>
+                    </div>
+                </div>
             </div>
 
             <!-- CONTENEUR ROUE -->
@@ -165,8 +180,8 @@
                 </div>
 
                 <div id="validation-buttons" class="grid grid-cols-2 gap-3">
-                    <button onclick="validateChallenge(true)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Défi tenu (+100) ✅</button>
-                    <button onclick="validateChallenge(false)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Abandonné ❌</button>
+                    <button onclick="validateChallenge(true)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Défi tenu (+<span id="points-success-label">2</span>) ✅</button>
+                    <button onclick="validateChallenge(false)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Abandonné (0) ❌</button>
                 </div>
             </div>
 
@@ -197,10 +212,19 @@
                 </div>
             </div>
 
-            <!-- SECTION MON ÉTAT PERSONNEL (Masquant les autres joueurs pour garder le secret) -->
+            <!-- SECTION MON ÉTAT PERSONNEL -->
             <div class="mt-4 pt-4 border-t border-gray-800">
-                <h4 class="text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider">Mon Bilan Secret</h4>
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-xs uppercase text-gray-400 font-bold tracking-wider">Mon Bilan Secret</h4>
+                    <span id="host-kick-trigger-label" class="text-[10px] text-red-400 font-semibold uppercase hidden">Gestion Hôte active</span>
+                </div>
                 <div id="my-live-score" class="space-y-1 text-xs"></div>
+            </div>
+
+            <!-- LISTE DES JOUEURS POUR L'HÔTE -->
+            <div id="host-in-game-players-section" class="hidden mt-4 pt-4 border-t border-gray-800">
+                <h4 class="text-xs uppercase text-red-400 mb-2 font-bold tracking-wider">🛠️ Gestion des Joueurs (Hôte)</h4>
+                <div id="host-in-game-players-list" class="space-y-2 max-h-28 overflow-y-auto text-xs"></div>
             </div>
 
             <div id="host-podium-trigger" class="hidden mt-6 pt-4 border-t border-gray-800 text-center">
@@ -231,6 +255,7 @@
         let roomCode = '';
         let timerInterval = null;
         let randomBuzzerTimer = null;
+        let pendingChallenge = null;
 
         let selectedGameMode = 'table'; 
         let avatarStyle = 'bottts';
@@ -360,6 +385,25 @@
             });
         }
 
+        function kickPlayer(playerId) {
+            if (myRole !== 'host') return;
+            if (playerId === myId) {
+                alert("Tu ne peux pas t'auto-exclure !");
+                return;
+            }
+
+            const connToClose = connections.find(c => c.peer === playerId);
+            if (connToClose && connToClose.open) {
+                connToClose.send({ type: 'KICKED' });
+                setTimeout(() => { connToClose.close(); }, 200);
+            }
+
+            connections = connections.filter(c => c.peer !== playerId);
+            gameData.players = gameData.players.filter(p => p.id !== playerId);
+            manageRandomBuzzer();
+            broadcastGameState();
+        }
+
         function handleHostIncomingData(conn, data) {
             if (data.type === 'JOIN') {
                 if (!connections.includes(conn)) connections.push(conn);
@@ -389,18 +433,31 @@
                     broadcastGameState();
                 }
             }
-            else if (data.type === 'SPIN') {
+            else if (data.type === 'SPIN_REQUEST') {
                 const player = gameData.players.find(p => p.id === conn.peer);
                 if (player && player.status === 'waiting') {
                     const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
                     const randomChallenge = pool[Math.floor(Math.random() * pool.length)];
-                    player.currentChallenge = randomChallenge;
-                    player.timeLeft = randomChallenge.time;
-                    player.maxTime = randomChallenge.time;
-                    player.timerStarted = false;
-                    player.status = 'playing';
-                    player.notification = null;
-                    manageRandomBuzzer();
+                    
+                    if (randomChallenge.isHard) {
+                        conn.send({ type: 'PROPOSE_HARD', challenge: randomChallenge });
+                    } else {
+                        assignChallengeToPlayer(player, randomChallenge);
+                        broadcastGameState();
+                    }
+                }
+            }
+            else if (data.type === 'ACCEPT_HARD') {
+                const player = gameData.players.find(p => p.id === conn.peer);
+                if (player && player.status === 'waiting') {
+                    if (data.accepted) {
+                        assignChallengeToPlayer(player, data.challenge);
+                    } else {
+                        const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
+                        let normalPool = pool.filter(c => !c.isHard);
+                        let fallbackChallenge = normalPool[Math.floor(Math.random() * normalPool.length)];
+                        assignChallengeToPlayer(player, fallbackChallenge);
+                    }
                     broadcastGameState();
                 }
             }
@@ -416,7 +473,10 @@
                 const player = gameData.players.find(p => p.id === conn.peer);
                 if (player && player.status === 'playing') {
                     if (data.success) {
-                        player.score += 100;
+                        const ptsToAdd = player.currentChallenge.isHard ? 4 : 2;
+                        player.score += ptsToAdd;
+                    } else {
+                        // Échec ou abandon = 0 point (pas de bonus, pas de malus direct sauf si piège)
                     }
                     player.currentChallenge = null;
                     player.timeLeft = 0;
@@ -445,6 +505,16 @@
             }
         }
 
+        function assignChallengeToPlayer(player, challenge) {
+            player.currentChallenge = challenge;
+            player.timeLeft = challenge.time;
+            player.maxTime = challenge.time;
+            player.timerStarted = false;
+            player.status = 'playing';
+            player.notification = null;
+            manageRandomBuzzer();
+        }
+
         function processAccusation(accuserPeerId, targetId, guessText) {
             const accuser = gameData.players.find(p => p.id === accuserPeerId);
             const target = gameData.players.find(p => p.id === targetId);
@@ -464,15 +534,15 @@
 
             if (isCorrect) {
                 gameData.consecutiveFails = 0;
-                accuser.score += 100; 
-                target.score -= 50;  
+                accuser.score += 1; // Tu surprends qqn = 1 point
+                target.score -= 1;  // Tu te fais prendre = -1 point
                 target.currentChallenge = null;
                 target.timeLeft = 0;
                 target.maxTime = 0;
                 target.timerStarted = false;
                 target.status = 'waiting'; 
                 
-                target.notification = `${accuser.name} a deviné votre objectif !`;
+                target.notification = `${accuser.name} a deviné votre objectif ! (-1 point)`;
 
                 manageRandomBuzzer();
                 broadcastGameState();
@@ -483,7 +553,7 @@
                     }
                 });
             } else {
-                accuser.score -= 25; 
+                accuser.score -= 1; // Fausse accusation = pénalité de -1 point aussi
                 gameData.consecutiveFails++;
 
                 if (gameData.consecutiveFails >= 3) {
@@ -584,6 +654,39 @@
                 applyGlobalBuzzerPenalty(data.duration);
             } else if (data.type === 'NOTIFIED') {
                 showNotification(data.msg);
+            } else if (data.type === 'KICKED') {
+                alert("Tu as été exclu(e) du salon par l'hôte.");
+                location.reload();
+            } else if (data.type === 'PROPOSE_HARD') {
+                pendingChallenge = data.challenge;
+                showHardModal(data.challenge.text);
+            }
+        }
+
+        function showHardModal(text) {
+            document.getElementById('hard-modal-text').innerText = text;
+            document.getElementById('hard-modal').classList.remove('hidden');
+        }
+
+        function acceptHardChallenge(accepted) {
+            document.getElementById('hard-modal').classList.add('hidden');
+            if (myRole === 'host') {
+                const me = gameData.players.find(p => p.id === myId);
+                if (accepted) {
+                    assignChallengeToPlayer(me, pendingChallenge);
+                } else {
+                    const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
+                    let normalPool = pool.filter(c => !c.isHard);
+                    let fallbackChallenge = normalPool[Math.floor(Math.random() * normalPool.length)];
+                    assignChallengeToPlayer(me, fallbackChallenge);
+                }
+                pendingChallenge = null;
+                broadcastGameState();
+            } else {
+                if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'ACCEPT_HARD', accepted: accepted, challenge: pendingChallenge });
+                }
+                pendingChallenge = null;
             }
         }
 
@@ -806,22 +909,21 @@
             const me = gameData.players.find(p => p.id === myId);
             if (!me || me.status !== 'waiting') return;
 
+            playSoundSpin();
+            const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
+            const randomChallenge = pool[Math.floor(Math.random() * pool.length)];
+
             if (myRole === 'host') {
-                playSoundSpin();
-                const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
-                const randomChallenge = pool[Math.floor(Math.random() * pool.length)];
-                me.currentChallenge = randomChallenge;
-                me.timeLeft = randomChallenge.time;
-                me.maxTime = randomChallenge.time;
-                me.timerStarted = false;
-                me.status = 'playing';
-                me.notification = null;
-                manageRandomBuzzer();
-                broadcastGameState();
+                if (randomChallenge.isHard) {
+                    pendingChallenge = randomChallenge;
+                    showHardModal(randomChallenge.text);
+                } else {
+                    assignChallengeToPlayer(me, randomChallenge);
+                    broadcastGameState();
+                }
             } else {
-                playSoundSpin();
                 if (hostConnection && hostConnection.open) {
-                    hostConnection.send({ type: 'SPIN' });
+                    hostConnection.send({ type: 'SPIN_REQUEST' });
                 }
             }
         }
@@ -855,9 +957,10 @@
             if (myRole === 'host') {
                 if (success) {
                     playSoundSuccess();
-                    me.score += 100;
+                    const ptsToAdd = me.currentChallenge.isHard ? 4 : 2;
+                    me.score += ptsToAdd;
                 } else {
-                    playSoundFail();
+                    playSoundFail(); // Échec = 0 points
                 }
                 me.currentChallenge = null;
                 me.timeLeft = 0;
@@ -901,7 +1004,10 @@
                                 <div class="text-[10px] text-gray-400 italic">${p.title || 'Le/La Soiffard(e)'}</div>
                             </div>
                         </div>
-                        ${gameData.players.length > 0 && p.id === gameData.players[0].id ? '<span class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded">Hôte</span>' : ''}
+                        <div class="flex items-center space-x-2">
+                            ${p.id === gameData.players[0].id ? '<span class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded">Hôte</span>' : ''}
+                            ${myRole === 'host' && p.id !== myId ? `<button onclick="kickPlayer('${p.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold px-2 py-1 rounded text-xs cursor-pointer" title="Exclure ce joueur">❌</button>` : ''}
+                        </div>
                     </li>
                 `).join('');
 
@@ -929,6 +1035,17 @@
                 document.getElementById('challenge-container').classList.toggle('hidden', !hasActiveChallenge);
 
                 document.getElementById('host-podium-trigger').classList.toggle('hidden', myRole !== 'host');
+                document.getElementById('host-kick-trigger-label').classList.toggle('hidden', myRole !== 'host');
+                document.getElementById('host-in-game-players-section').classList.toggle('hidden', myRole !== 'host');
+
+                if (myRole === 'host') {
+                    document.getElementById('host-in-game-players-list').innerHTML = gameData.players.map(p => `
+                        <div class="flex justify-between items-center bg-gray-800/80 px-3 py-1.5 rounded">
+                            <span class="font-bold text-white">${p.name} (${p.score} pts)</span>
+                            ${p.id !== myId ? `<button onclick="kickPlayer('${p.id}')" class="bg-red-600 hover:bg-red-500 text-white font-bold px-2 py-0.5 rounded text-[10px] cursor-pointer">Exclure ❌</button>` : '<span class="text-[10px] text-gray-400">Toi (Hôte)</span>'}
+                        </div>
+                    `).join('');
+                }
 
                 if (status === 'waiting') {
                     document.getElementById('player-status-title').innerText = "Prêt pour un tour ?";
@@ -938,6 +1055,11 @@
                     document.getElementById('challenge-category').innerText = me.currentChallenge.cat;
                     document.getElementById('challenge-text').innerText = me.currentChallenge.text;
                     
+                    const ptsLabel = document.getElementById('points-success-label');
+                    if (ptsLabel) {
+                        ptsLabel.innerText = me.currentChallenge.isHard ? "4" : "2";
+                    }
+
                     updateTimerDisplayUI(me.timeLeft, me.maxTime, me.timerStarted);
                     
                     if (me.timerStarted && !timerInterval) {
@@ -1000,33 +1122,33 @@
         updateAvatarPreview();
 
         const challengesTable = [
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120 },
-            { cat: '🍽️️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, interdis-toi de poser tes coudes sur la table en adoptant une posture ultra-rigide.', time: 90 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, donne un surnom affectueux (ex: "Mon p’tit chou") à chaque fois que tu t’adresses au joueur à ta gauche.', time: 120 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90 },
-            { cat: '🍽️️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 60 secondes, prends une voix de majordome obséquieux pour répondre à ton voisin d’en face.', time: 60 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ton couvert bien à l’horizontale après chaque bouchée.', time: 90 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, demande l’avis du joueur à ta droite sur absolument TOUT ce que tu manges ou bois.', time: 120 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, fais comme si ton plat était brûlant et souffle dessus exagérément avant chaque bouchée.', time: 90 }
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90, isHard: false },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120, isHard: false },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90, isHard: false },
+            { cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de dire "oui", "non", "je", et "tu" sous peine de perdre gros.', time: 180, isHard: true },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120, isHard: false },
+            { cat: '🔥 HARD : Table', text: 'Pendant 2 minutes, mange absolument tout ce que tu portes à ta bouche avec tes mains uniquement (interdiction d’utiliser les couverts).', time: 120, isHard: true },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90, isHard: false },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120, isHard: false },
+            { cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de toucher ton verre toi-même : tu dois supplier quelqu’un d’autre de te faire boire.', time: 180, isHard: true },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ton couvert bien à l’horizontale après chaque bouchée.', time: 90, isHard: false },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, demande l’avis du joueur à ta droite sur absolument TOUT ce que tu manges ou bois.', time: 120, isHard: false },
+            { cat: '🔥 HARD : Table', text: 'Pendant 2 minutes, tu dois te nourrir en fermant les yeux à chaque bouchée et deviner chaque ingrédient à haute voix.', time: 120, isHard: true }
         ];
 
         const challengesParty = [
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, commence absolument toutes tes phrases par "À mon humble avis...".', time: 90 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, chaque fois que quelqu’un pose une question, réponds par une autre question.', time: 120 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 60 secondes, parle en chuchotant de façon dramatique comme si un secret d’État était en jeu.', time: 60 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, adopte une position de penseur (main sur le menton) en opinant à tout ce qu’on dit.', time: 90 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, interdis-toi de croiser les bras ou de toucher ton visage.', time: 120 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, fais semblant d’avoir un tic nerveux à l’œil gauche.', time: 90 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, glisse le mot "Cactus" dans la discussion sans que ça paraisse suspect.', time: 120 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, adopte une posture ultra-détendue les mains derrière la tête.', time: 90 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, pose ton téléphone face contre table et interdis-toi de le regarder ou de le toucher.', time: 120 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, soutiens mordicus qu’on est un autre jour de la semaine avec un sérieux de marbre.', time: 90 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, fais mine de traduire tout ce que dit ton voisin en langage imaginaire.', time: 120 },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, prends un accent très prononcé (ex: chantant ou théâtral).', time: 90 }
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, commence absolument toutes tes phrases par "À mon humble avis...".', time: 90, isHard: false },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, chaque fois que quelqu’un pose une question, réponds par une autre question.', time: 120, isHard: false },
+            { cat: '🔥 HARD : Amis', text: 'Pendant 3 minutes, interdis-toi de sourire ou de rire, peu importe ce qu’on raconte.', time: 180, isHard: true },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, adopte une position de penseur (main sur le menton) en opinant à tout ce qu’on dit.', time: 90, isHard: false },
+            { cat: '🔥 HARD : Amis', text: 'Pendant 2 minutes, parle uniquement en chuchotant de façon ultra-intrigante.', time: 120, isHard: true },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, fais semblant d’avoir un tic nerveux à l’œil gauche.', time: 90, isHard: false },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, glisse le mot "Cactus" dans la discussion sans que ça paraisse suspect.', time: 120, isHard: false },
+            { cat: '🔥 HARD : Amis', text: 'Pendant 3 minutes, tu dois te lever et changer de place dès qu’un joueur prononce une voyelle précise (ex: la lettre A).', time: 180, isHard: true },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, pose ton téléphone face contre table et interdis-toi de le regarder ou de le toucher.', time: 120, isHard: false },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, soutiens mordicus qu’on est un autre jour de la semaine avec un sérieux de marbre.', time: 90, isHard: false },
+            { cat: '🔥 HARD : Amis', text: 'Pendant 2 minutes, tu dois répéter le dernier mot prononcé par la personne qui vient de parler avant de dire ta phrase.', time: 120, isHard: true },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, prends un accent très prononcé (ex: chantant ou théâtral).', time: 90, isHard: false }
         ];
     </script>
 </body>
