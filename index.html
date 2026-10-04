@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LE DÎNER INFERNAL - Le Jeu de Soirée Ultime</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        infernalRed: '#FF1E38',
+                        infernalGold: '#FFB800',
+                        infernalDark: '#0B0D14',
+                        infernalCard: '#131826',
+                        infernalPurple: '#7B2CBF'
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 3s infinite',
+                        'wiggle': 'wiggle 0.4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        wiggle: {
+                            '0%, 100%': { transform: 'rotate(-4deg)' },
+                            '50%': { transform: 'rotate(4deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0B0D14;
+            color: #F8FAFC;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .neon-glow-red {
+            box-shadow: 0 0 30px rgba(255, 30, 56, 0.5);
+        }
+        .neon-glow-gold {
+            box-shadow: 0 0 30px rgba(255, 184, 0, 0.5);
+        }
+        .neon-glow-purple {
+            box-shadow: 0 0 30px rgba(123, 44, 191, 0.5);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0D14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #131826;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FF1E38;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-infernalRed selection:text-white">
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="w-full bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2.5 cursor-pointer" onclick="returnToHome()">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-infernalRed to-infernalGold flex items-center justify-center font-black text-lg text-white neon-glow-red">
+                    🔥
+                </div>
+                <div>
+                    <h1 class="font-black text-base md:text-lg tracking-wider bg-gradient-to-r from-infernalRed via-infernalGold to-red-400 bg-clip-text text-transparent">
+                        DÎNER INFERNAL
+                    </h1>
+                    <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Table Party Game</p>
+                </div>
+            </div>
+            <div id="header-controls" class="hidden flex items-center space-x-2">
+                <button onclick="toggleLeaderboardModal()" class="bg-slate-800 hover:bg-slate-700 text-infernalGold px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-700 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span id="header-score-indicator">0 pts</span>
+                </button>
+                <button onclick="toggleSound()" id="sound-toggle-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 w-8 h-8 rounded-xl flex items-center justify-center border border-slate-700 transition">
+                    <i class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow flex items-center justify-center p-4 max-w-md mx-auto w-full">
+        
+        <!-- VUE 1 : ACCUEIL & CRÉATION / REJOINDRE SALON -->
+        <section id="view-home" class="w-full space-y-5 animate-fadeIn">
+            <div class="text-center space-y-2.5 py-1">
+                <div class="inline-block bg-infernalRed/20 text-infernalRed px-3.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-widest border border-infernalRed/30 animate-bounce-slow">
+                    😈 L'Expérience Ultime Entre Potes 😈
+                </div>
+                <h2 class="text-3xl md:text-5xl font-black tracking-tight leading-none">
+                    DÎNER <span class="text-infernalRed">INFERNAL</span>
+                </h2>
+                <p class="text-slate-400 text-xs md:text-sm max-w-xs mx-auto">
+                    Le jeu de table le plus imprévisible et diabolique. Affrontez les défis extrêmes, échappez aux gages et régnez sur la table !
+                </p>
+            </div>
+
+            <!-- Card Principale -->
+            <div class="bg-infernalCard border border-slate-800/80 rounded-3xl p-5 md:p-6 shadow-2xl space-y-5">
+                
+                <!-- Pseudo du Joueur -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                        <i class="fa-solid fa-user text-infernalGold mr-1.5"></i> Ton Pseudo
+                    </label>
+                    <input type="text" id="player-pseudo-input" placeholder="Ex: Michou, Inox, Léna..." maxlength="15"
+                        class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-infernalRed transition font-semibold text-sm">
+                </div>
+
+                <!-- Onglets Mode -->
+                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900 rounded-xl border border-slate-800">
+                    <button onclick="switchTab('create')" id="tab-create" class="py-2.5 rounded-lg text-xs font-bold transition bg-infernalRed text-white shadow-md">
+                        Créer un Salon
+                    </button>
+                    <button onclick="switchTab('join')" id="tab-join" class="py-2.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white">
+                        Rejoindre Salon
+                    </button>
+                </div>
+
+                <!-- Panneau Création -->
+                <div id="panel-create" class="space-y-4">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                            <i class="fa-solid fa-fire text-infernalGold mr-1.5"></i> Intensité Infernale
+                        </label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="setIntensity('chill')" id="btn-chill" class="intensity-btn bg-slate-900 border border-slate-700 hover:border-amber-400 p-2.5 rounded-xl text-center transition font-bold text-xs text-slate-300">
+                                🍷 Chill / Apéro
+                            </button>
+                            <button onclick="setIntensity('normal')" id="btn-normal" class="intensity-btn bg-slate-900 border-2 border-infernalRed p-2.5 rounded-xl text-center transition font-bold text-xs text-white neon-glow-red">
+                                🔥 Piquant
+                            </button>
+                            <button onclick="setIntensity('hardcore')" id="btn-hardcore" class="intensity-btn bg-slate-900 border border-slate-700 hover:border-infernalGold p-2.5 rounded-xl text-center transition font-bold text-xs text-slate-300">
+                                ☠️ Hardcore
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="createRoom()" class="w-full py-3.5 bg-gradient-to-r from-infernalRed via-infernalPurple to-infernalGold text-white font-black text-sm rounded-xl shadow-xl hover:opacity-95 transition flex items-center justify-center space-x-2">
+                        <span>CRÉER LE SALON INFERNAL</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Panneau Rejoindre -->
+                <div id="panel-join" class="space-y-4 hidden">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                            <i class="fa-solid fa-key text-infernalGold mr-1.5"></i> Code du Salon (4 chiffres)
+                        </label>
+                        <input type="text" id="room-code-input" placeholder="Ex: 6666" maxlength="4"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-infernalGold transition font-bold text-center tracking-widest text-lg">
+                    </div>
+
+                    <button onclick="joinRoom()" class="w-full py-3.5 bg-gradient-to-r from-infernalGold to-amber-500 text-slate-950 font-black text-sm rounded-xl shadow-xl hover:opacity-95 transition flex items-center justify-center space-x-2">
+                        <span>REJOINDRE LA TABLE</span>
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- VUE 2 : SALON D'ATTENTE (LOBBY) -->
+        <section id="view-lobby" class="w-full hidden space-y-5 animate-fadeIn">
+            <div class="bg-infernalCard border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 text-center">
+                <div class="space-y-1">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Salon Privé du Dîner</span>
+                    <h3 class="text-3xl font-black text-infernalGold tracking-widest" id="lobby-room-code">#----</h3>
+                    <p class="text-xs text-slate-400">Partage ce code à tes amis pour qu'ils se connectent sur leurs portables !</p>
+                </div>
+
+                <div class="space-y-2 text-left">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-300 uppercase">
+                        <span>Invités à table (<span id="lobby-player-count">0</span>)</span>
+                        <span class="text-infernalRed">Prêts à souffrir</span>
+                    </div>
+                    <div id="lobby-players-list" class="space-y-2 max-h-48 overflow-y-auto p-2 bg-slate-900/60 rounded-2xl border border-slate-800">
+                        <!-- Rempli dynamiquement -->
+                    </div>
+                </div>
+
+                <div id="host-controls" class="space-y-3 pt-2">
+                    <button onclick="startPartyGame()" class="w-full py-4 bg-gradient-to-r from-infernalRed via-infernalPurple to-infernalGold text-white font-black text-base rounded-2xl shadow-xl hover:opacity-95 transition">
+                        <i class="fa-solid fa-play mr-2"></i> LANCER LE DÎNER INFERNAL !
+                    </button>
+                    <p class="text-[11px] text-slate-500 italic">En tant qu'hôte, tu lances la partie pour tous les appareils connectés.</p>
+                </div>
+
+                <div id="guest-waiting-msg" class="hidden py-4 text-slate-400 text-sm font-semibold animate-pulse">
+                    <i class="fa-solid fa-spinner fa-spin mr-2 text-infernalGold"></i> En attente que l'hôte lance le service...
+                </div>
+            </div>
+        </section>
+
+        <!-- VUE 3 : JEU EN COURS & ROUE INFERNALE -->
+        <section id="view-game" class="w-full hidden space-y-5 animate-fadeIn">
+            <!-- Barre Tour en cours -->
+            <div class="flex justify-between items-center bg-slate-900/90 border border-slate-800 p-3.5 rounded-2xl shadow-lg">
+                <div class="flex items-center space-x-2.5">
+                    <div id="game-current-avatar" class="w-10 h-10 rounded-full bg-infernalRed flex items-center justify-center font-black text-white text-base shadow-md">
+                        M
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">C'est au tour de</p>
+                        <h3 id="game-current-name" class="font-extrabold text-sm md:text-base text-white">Joueur</h3>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="openCustomModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-slate-700 transition" title="Ajouter un défi">
+                        <i class="fa-solid fa-plus text-infernalRed"></i>
+                    </button>
+                    <div class="bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-xs font-bold text-infernalGold">
+                        Tour <span id="game-current-round">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zone Roue Infernale -->
+            <div id="wheel-container" class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-infernalPurple rounded-3xl p-6 text-center shadow-2xl neon-glow-purple space-y-5">
+                <div class="space-y-1">
+                    <div class="inline-block bg-infernalPurple/20 text-infernalPurple px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-widest border border-infernalPurple/40">
+                        🎡 Roue Infernale
+                    </div>
+                    <h3 class="text-xl md:text-2xl font-black text-white">Tourne la roue pour affronter ton destin !</h3>
+                </div>
+
+                <!-- Roue Graphique -->
+                <div class="relative w-40 h-40 mx-auto flex items-center justify-center">
+                    <div id="wheel-spinning-graphic" class="w-full h-full rounded-full border-8 border-slate-800 bg-gradient-to-tr from-infernalRed via-infernalPurple to-infernalGold shadow-2xl flex items-center justify-center transition-transform duration-1000">
+                        <div class="w-14 h-14 bg-slate-900 rounded-full border-4 border-infernalGold flex items-center justify-center text-xl shadow-inner">
+                            😈
+                        </div>
+                    </div>
+                    <div class="absolute -top-2.5 w-5 h-5 bg-infernalGold rotate-45 rounded-sm shadow-md border border-slate-900"></div>
+                </div>
+
+                <button onclick="spinTheWheel()" id="btn-spin-wheel" class="w-full py-3.5 bg-gradient-to-r from-infernalRed to-infernalPurple text-white font-black text-sm rounded-xl shadow-xl hover:opacity-95 transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-rotate mr-1.5"></i> TOURNER LA ROUE !
+                </button>
+            </div>
+
+            <!-- Carte Défi / Épreuve Active -->
+            <div id="challenge-card" class="hidden relative bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-infernalRed rounded-3xl p-6 shadow-2xl neon-glow-red space-y-5 text-center">
+                <div class="flex justify-between items-center">
+                    <span id="challenge-cat" class="bg-infernalRed/20 text-infernalRed border border-infernalRed/40 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-widest">
+                        Catégorie
+                    </span>
+                    <span id="challenge-pts" class="bg-infernalGold/20 text-infernalGold border border-infernalGold/40 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-widest">
+                        +150 Pts
+                    </span>
+                </div>
+
+                <div class="py-2 space-y-3">
+                    <div id="challenge-icon" class="text-4xl text-infernalRed animate-wiggle">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <h3 id="challenge-title-text" class="text-xl md:text-2xl font-black text-white leading-tight">
+                        Titre du Défi
+                    </h3>
+                    <p id="challenge-desc-text" class="text-slate-300 text-xs md:text-sm max-w-xs mx-auto leading-relaxed">
+                        Description...
+                    </p>
+                </div>
+
+                <!-- Chronomètre Optionnel -->
+                <div id="game-timer-box" class="hidden space-y-2 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <div class="text-2xl font-black text-infernalGold" id="timer-val">30s</div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="timer-bar-fill" class="bg-infernalGold h-full w-full transition-all duration-1000"></div>
+                    </div>
+                    <button onclick="startChrono()" id="btn-start-chrono" class="mt-1 bg-slate-800 hover:bg-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300">
+                        <i class="fa-solid fa-play mr-1"></i> Lancer le chrono
+                    </button>
+                </div>
+
+                <!-- Boutons Validation / Échec -->
+                <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-800">
+                    <button onclick="resolveRound(false)" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 font-bold py-3 px-3 rounded-xl text-xs transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-xmark text-base"></i>
+                        <span>Échoué (Gage)</span>
+                    </button>
+                    <button onclick="resolveRound(true)" class="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/40 font-bold py-3 px-3 rounded-xl text-xs transition flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-check text-base"></i>
+                        <span>Réussi (+Pts)</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VUE 4 : FIN DE PARTIE & PODIUM -->
+        <section id="view-end" class="w-full hidden space-y-5 text-center animate-fadeIn">
+            <div class="space-y-2 py-1">
+                <div class="inline-block bg-infernalGold/20 text-infernalGold px-3.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border border-infernalGold/30 animate-bounce-slow">
+                    👑 Maître du Dîner Infernal 👑
+                </div>
+                <h2 class="text-3xl md:text-4xl font-black tracking-tight">
+                    FIN DU <span class="text-infernalGold">SERVICE !</span>
+                </h2>
+                <p class="text-slate-400 text-xs">Le verdict de la table est tombé.</p>
+            </div>
+
+            <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-infernalGold rounded-3xl p-6 shadow-2xl neon-glow-gold space-y-5">
+                <div class="w-20 h-20 bg-gradient-to-tr from-infernalGold to-amber-500 rounded-full mx-auto flex items-center justify-center text-3xl text-slate-950 font-black shadow-xl">
+                    🏆
+                </div>
+                <div>
+                    <h3 id="end-winner-name" class="text-2xl font-black text-white">Vainqueur</h3>
+                    <p id="end-winner-score" class="text-infernalGold font-bold text-sm mt-0.5">0 Points</p>
+                </div>
+
+                <div class="pt-3 border-t border-slate-800 space-y-2 text-left">
+                    <h4 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Classement Final</h4>
+                    <div id="end-leaderboard-list" class="space-y-2">
+                        <!-- Rempli par script -->
+                    </div>
+                </div>
+
+                <button onclick="returnToHome()" class="w-full py-3.5 bg-gradient-to-r from-infernalRed via-infernalPurple to-infernalGold text-white font-black text-sm rounded-xl shadow-xl hover:opacity-95 transition">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> NOUVEAU DINNER
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL GAGE -->
+    <div id="dare-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-infernalRed rounded-3xl p-6 max-w-sm w-full space-y-4 text-center shadow-2xl animate-fadeIn">
+            <div class="w-14 h-14 bg-infernalRed/20 text-infernalRed rounded-2xl mx-auto flex items-center justify-center text-2xl border border-infernalRed/40">
+                <i class="fa-solid fa-skull"></i>
+            </div>
+            <h3 class="text-xl font-black text-white">GAGE INFERNAL !</h3>
+            <p id="dare-text-content" class="text-slate-300 text-xs md:text-sm font-semibold bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                Gage...
+            </p>
+            <button onclick="closeDareModal()" class="w-full py-3 bg-infernalRed hover:bg-red-600 text-white font-bold rounded-xl text-xs shadow-lg transition">
+                J'ai subi, tour suivant !
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL CLASSEMENT LIVE -->
+    <div id="leaderboard-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-xs w-full space-y-3 shadow-2xl">
+            <div class="flex justify-between items-center pb-2.5 border-b border-slate-800">
+                <h3 class="font-extrabold text-sm text-white flex items-center"><i class="fa-solid fa-trophy text-infernalGold mr-2"></i> Classement Live</h3>
+                <button onclick="toggleLeaderboardModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="modal-leaderboard-items" class="space-y-2 max-h-48 overflow-y-auto"></div>
+            <button onclick="toggleLeaderboardModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 font-bold rounded-xl text-xs transition">Fermer</button>
+        </div>
+    </div>
+
+    <!-- MODAL DÉFI CUSTOM -->
+    <div id="custom-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-sm w-full space-y-3 shadow-2xl">
+            <div class="flex justify-between items-center pb-2.5 border-b border-slate-800">
+                <h3 class="font-extrabold text-sm text-white flex items-center"><i class="fa-solid fa-plus-circle text-infernalRed mr-2"></i> Ajouter ton Défi</h3>
+                <button onclick="openCustomModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-2.5">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Titre</label>
+                    <input type="text" id="custom-input-title" placeholder="Ex: Le roast suprême" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-infernalRed">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Description</label>
+                    <textarea id="custom-input-desc" rows="2" placeholder="Règle du défi..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-infernalRed"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-1">
+                <button onclick="openCustomModal()" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 font-bold rounded-xl text-xs transition">Annuler</button>
+                <button onclick="saveCustomChallenge()" class="flex-1 py-2 bg-infernalRed hover:bg-red-600 font-bold rounded-xl text-xs transition text-white">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full text-center py-3 text-[10px] text-slate-500 border-t border-slate-900">
+        Le Dîner Infernal &bull; Expérience Multi-Joueurs Mobile
+    </footer>
+
+    <!-- SCRIPT LOGIQUE & MULTIJOUEUR -->
+    <script>
+        let gameState = {
+            roomCode: '',
+            isHost: false,
+            pseudo: '',
+            intensity: 'normal',
+            players: [],
+            currentRound: 1,
+            maxRounds: 10,
+            currentPlayerIndex: 0,
+            activeChallenge: null,
+            timerInterval: null,
+            timeLeft: 30,
+            soundOn: true
+        };
+
+        // Synchronisation inter-appareils / onglets via BroadcastChannel
+        let infernalChannel = new BroadcastChannel('diner_infernal_channel');
+        infernalChannel.onmessage = function(event) {
+            const data = event.data;
+            if(data.type === 'SYNC_STATE') {
+                gameState = data.state;
+                renderApp();
+            }
+        };
+
+        function broadcastState() {
+            infernalChannel.postMessage({ type: 'SYNC_STATE', state: gameState });
+        }
+
+        let synth = null;
+        function initAudio() {
+            try {
+                synth = new Tone.Synth().toDestination();
+            } catch(e) {}
+        }
+
+        function playSound(type) {
+            if(!gameState.soundOn || !synth) return;
+            try {
+                Tone.start();
+                if(type === 'spin') synth.triggerAttackRelease("D4", "8n");
+                else if(type === 'success') {
+                    synth.triggerAttackRelease("G4", "8n");
+                    setTimeout(() => synth.triggerAttackRelease("C5", "4n"), 150);
+                }
+                else if(type === 'fail') synth.triggerAttackRelease("C3", "4n");
+            } catch(e) {}
+        }
+
+        function toggleSound() {
+            gameState.soundOn = !gameState.soundOn;
+            const btn = document.getElementById('sound-toggle-btn');
+            btn.innerHTML = gameState.soundOn ? `<i class="fa-solid fa-volume-high text-xs"></i>` : `<i class="fa-solid fa-volume-xmark text-xs text-red-400"></i>`;
+        }
+
+        // Base de Défis du Dîner Infernal
+        const challengesDatabase = {
+            chill: [
+                { title: "Le Secret Inavouable", desc: "Raconte ton anecdote la plus gênante vécue en famille ou en public en 45 secondes.", cat: "Apéro Vérité", pts: 100, icon: "fa-face-grimace", hasTimer: true, time: 45 },
+                { title: "Imitation Express", desc: "Imite une personnalité ou un influenceur célèbre. La table doit deviner en moins de 30s.", cat: "Jeu de Rôle", pts: 100, icon: "fa-masks-theater", hasTimer: true, time: 30 },
+                { title: "Le Compliment Piégé", desc: "Fais le compliment le plus bizarre et tordu possible au joueur situé à ta gauche.", cat: "Interaction", pts: 80, icon: "fa-heart" }
+            ],
+            normal: [
+                { title: "Épreuve Piquante", desc: "Prends une cuillère de sauce très épicée ou mange un aliment corsé choisi par tes voisins !", cat: "Gage Repas", pts: 200, icon: "fa-pepper-hot" },
+                { title: "SMS Piège", desc: "Envoie 'J'ai enfin pris ma décision, on ne peut plus faire marche arrière' au 4ème contact de ton téléphone.", cat: "Gage Téléphone", pts: 250, icon: "fa-mobile-screen" },
+                { title: "Le Stare Contest", desc: "Regarde fixement le joueur d'en face dans les yeux sans cligner des yeux. Le premier qui lâche perd !", cat: "Duel Infernal", pts: 150, icon: "fa-eye", hasTimer: true, time: 30 },
+                { title: "Le Chant du Yaourt", desc: "Chante le refrain de ton tube préféré entièrement en yaourt sans t'arrêter.", cat: "Performance", pts: 180, icon: "fa-music", hasTimer: true, time: 20 }
+            ],
+            hardcore: [
+                { title: "Cocktail Mystère", desc: "La table prépare un mélange infernal (citron, moutarde, eau gazeuse). Bois une gorgée cul-sec !", cat: "Hardcore Repas", pts: 400, icon: "fa-wine-glass-empty" },
+                { title: "La Danse Macabre", desc: "Fais une danse ridicule au centre de la pièce pendant 30 secondes sous les huées de la table.", cat: "Gage Physique", pts: 300, icon: "fa-person-running", hasTimer: true, time: 30 },
+                { title: "La Fouille Publique", desc: "Montre l'historique de tes recherches Google des 7 derniers jours au joueur de ton choix.", cat: "Vérité Suprême", pts: 350, icon: "fa-shield-halved" },
+                { title: "Le Gainage de l'Enfer", desc: "Tiens en position gainage (planche) pendant 45 secondes tout en répondant aux questions.", cat: "Sport Extrême", pts: 300, icon: "fa-dumbbell", hasTimer: true, time: 45 }
+            ]
+        };
+
+        const customChallengesList = [];
+        const daresList = [
+            "Bois un verre d'eau salée ou un cocktail bizarre préparé par ton voisin !",
+            "Fais le serveur personnel pour toute la table pendant les 2 prochains tours.",
+            "Garde un glaçon dans la main jusqu'à ce qu'il fonde entièrement.",
+            "Parle avec un accent insupportable pendant 3 minutes complètes.",
+            "Fais 15 pompes immédiates sous les encouragements de tes amis !"
+        ];
+
+        window.onload = function() {
+            initAudio();
+        };
+
+        function switchTab(mode) {
+            if(mode === 'create') {
+                document.getElementById('tab-create').className = "py-2.5 rounded-lg text-xs font-bold transition bg-infernalRed text-white shadow-md";
+                document.getElementById('tab-join').className = "py-2.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+                document.getElementById('panel-create').classList.remove('hidden');
+                document.getElementById('panel-join').classList.add('hidden');
+            } else {
+                document.getElementById('tab-join').className = "py-2.5 rounded-lg text-xs font-bold transition bg-infernalGold text-slate-950 shadow-md";
+                document.getElementById('tab-create').className = "py-2.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white";
+                document.getElementById('panel-join').classList.remove('hidden');
+                document.getElementById('panel-create').classList.add('hidden');
+            }
+        }
+
+        function setIntensity(level) {
+            gameState.intensity = level;
+            document.querySelectorAll('.intensity-btn').forEach(b => {
+                b.className = "intensity-btn bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-center transition font-bold text-xs text-slate-300";
+            });
+            const btn = document.getElementById(`btn-${level}`);
+            if(level === 'chill') btn.className = "intensity-btn bg-slate-900 border-2 border-amber-400 p-2.5 rounded-xl text-center transition font-bold text-xs text-white neon-glow-gold";
+            if(level === 'normal') btn.className = "intensity-btn bg-slate-900 border-2 border-infernalRed p-2.5 rounded-xl text-center transition font-bold text-xs text-white neon-glow-red";
+            if(level === 'hardcore') btn.className = "intensity-btn bg-slate-900 border-2 border-infernalGold p-2.5 rounded-xl text-center transition font-bold text-xs text-white neon-glow-gold";
+        }
+
+        function showAlert(msg) {
+            const div = document.createElement('div');
+            div.className = "fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-infernalRed text-white px-5 py-2.5 rounded-2xl shadow-2xl font-bold text-xs animate-bounce";
+            div.innerText = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2500);
+        }
+
+        function createRoom() {
+            const pseudo = document.getElementById('player-pseudo-input').value.trim();
+            if(!pseudo) {
+                showAlert("Entre ton pseudo avant de créer un salon !");
+                return;
+            }
+            gameState.pseudo = pseudo;
+            gameState.isHost = true;
+            gameState.roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+            
+            const colors = ['bg-infernalRed', 'bg-infernalPurple', 'bg-infernalGold', 'bg-emerald-500', 'bg-cyan-500'];
+            gameState.players = [{
+                name: pseudo,
+                score: 0,
+                color: colors[0],
+                isHost: true
+            }];
+
+            broadcastState();
+            enterLobby();
+        }
+
+        function joinRoom() {
+            const pseudo = document.getElementById('player-pseudo-input').value.trim();
+            const code = document.getElementById('room-code-input').value.trim();
+            if(!pseudo || code.length !== 4) {
+                showAlert("Entre ton pseudo et un code de salon valide à 4 chiffres !");
+                return;
+            }
+            gameState.pseudo = pseudo;
+            gameState.isHost = false;
+            gameState.roomCode = code;
+
+            const colors = ['bg-infernalRed', 'bg-infernalPurple', 'bg-infernalGold', 'bg-emerald-500', 'bg-cyan-500'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+            if(!gameState.players.some(p => p.name.toLowerCase() === pseudo.toLowerCase())) {
+                gameState.players.push({
+                    name: pseudo,
+                    score: 0,
+                    color: randomColor,
+                    isHost: false
+                });
+            }
+
+            broadcastState();
+            enterLobby();
+        }
+
+        function enterLobby() {
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-lobby').classList.remove('hidden');
+            document.getElementById('lobby-room-code').innerText = `#${gameState.roomCode}`;
+            
+            if(gameState.isHost) {
+                document.getElementById('host-controls').classList.remove('hidden');
+                document.getElementById('guest-waiting-msg').classList.add('hidden');
+            } else {
+                document.getElementById('host-controls').classList.add('hidden');
+                document.getElementById('guest-waiting-msg').classList.remove('hidden');
+            }
+            updateLobbyUI();
+        }
+
+        function updateLobbyUI() {
+            document.getElementById('lobby-player-count').innerText = gameState.players.length;
+            const list = document.getElementById('lobby-players-list');
+            list.innerHTML = '';
+            gameState.players.forEach(p => {
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs font-semibold">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full ${p.color}"></span>
+                            <span class="text-white">${p.name}</span>
+                        </div>
+                        ${p.isHost ? '<span class="text-[10px] bg-infernalRed/20 text-infernalRed px-2 py-0.5 rounded-md font-bold">Hôte</span>' : ''}
+                    </div>
+                `;
+            });
+        }
+
+        function startPartyGame() {
+            if(gameState.players.length < 1) {
+                showAlert("Il faut au moins 1 joueur !");
+                return;
+            }
+            gameState.currentRound = 1;
+            gameState.currentPlayerIndex = 0;
+            broadcastState();
+            triggerGameView();
+        }
+
+        function triggerGameView() {
+            document.getElementById('view-lobby').classList.add('hidden');
+            document.getElementById('view-end').classList.add('hidden');
+            document.getElementById('view-game').classList.remove('hidden');
+            document.getElementById('header-controls').classList.remove('hidden');
+            prepareTurn();
+        }
+
+        function prepareTurn() {
+            if(gameState.currentRound > gameState.maxRounds) {
+                endPartyGame();
+                return;
+            }
+            stopChrono();
+            document.getElementById('game-current-round').innerText = gameState.currentRound;
+
+            const currPlayer = gameState.players[gameState.currentPlayerIndex];
+            document.getElementById('game-current-name').innerText = currPlayer.name;
+            const avatar = document.getElementById('game-current-avatar');
+            avatar.innerText = currPlayer.name.charAt(0).toUpperCase();
+            avatar.className = `w-10 h-10 rounded-full ${currPlayer.color} flex items-center justify-center font-black text-white text-base shadow-md`;
+            
+            document.getElementById('header-score-indicator').innerText = `${currPlayer.score} pts`;
+
+            document.getElementById('wheel-container').classList.remove('hidden');
+            document.getElementById('challenge-card').classList.add('hidden');
+        }
+
+        function spinTheWheel() {
+            playSound('spin');
+            const wheel = document.getElementById('wheel-spinning-graphic');
+            const btn = document.getElementById('btn-spin-wheel');
+            btn.disabled = true;
+
+            const rot = 1440 + Math.floor(Math.random() * 720);
+            wheel.style.transform = `rotate(${rot}deg)`;
+
+            setTimeout(() => {
+                wheel.style.transform = 'rotate(0deg)';
+                btn.disabled = false;
+                loadChallenge();
+            }, 1200);
+        }
+
+        function loadChallenge() {
+            document.getElementById('wheel-container').classList.add('hidden');
+            document.getElementById('challenge-card').classList.remove('hidden');
+
+            const pool = [...challengesDatabase[gameState.intensity], ...customChallengesList];
+            gameState.activeChallenge = pool[Math.floor(Math.random() * pool.length)];
+
+            document.getElementById('challenge-cat').innerText = gameState.activeChallenge.cat;
+            document.getElementById('challenge-pts').innerText = `+${gameState.activeChallenge.pts} Pts`;
+            document.getElementById('challenge-title-text').innerText = gameState.activeChallenge.title;
+            document.getElementById('challenge-desc-text').innerText = gameState.activeChallenge.desc;
+            document.getElementById('challenge-icon').innerHTML = `<i class="fa-solid ${gameState.activeChallenge.icon || 'fa-fire'}"></i>`;
+
+            const timerBox = document.getElementById('game-timer-box');
+            if(gameState.activeChallenge.hasTimer) {
+                timerBox.classList.remove('hidden');
+                gameState.timeLeft = gameState.activeChallenge.time || 30;
+                document.getElementById('timer-val').innerText = `${gameState.timeLeft}s`;
+                document.getElementById('timer-bar-fill').style.width = '100%';
+                document.getElementById('btn-start-chrono').disabled = false;
+            } else {
+                timerBox.classList.add('hidden');
+            }
+        }
+
+        function startChrono() {
+            document.getElementById('btn-start-chrono').disabled = true;
+            const valElem = document.getElementById('timer-val');
+            const barElem = document.getElementById('timer-bar-fill');
+            const total = gameState.activeChallenge.time || 30;
+
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeLeft--;
+                valElem.innerText = `${gameState.timeLeft}s`;
+                barElem.style.width = `${(gameState.timeLeft / total) * 100}%`;
+
+                if(gameState.timeLeft <= 0) {
+                    stopChrono();
+                    valElem.innerText = "TEMPS ÉCOULÉ ! ⏰";
+                }
+            }, 1000);
+        }
+
+        function stopChrono() {
+            if(gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+                gameState.timerInterval = null;
+            }
+        }
+
+        function resolveRound(success) {
+            stopChrono();
+            const currPlayer = gameState.players[gameState.currentPlayerIndex];
+            
+            if(success) {
+                playSound('success');
+                currPlayer.score += gameState.activeChallenge.pts;
+                showAlert(`🎉 Bien joué ${currPlayer.name} ! +${gameState.activeChallenge.pts} pts`);
+                proceedNext();
+            } else {
+                playSound('fail');
+                const dare = daresList[Math.floor(Math.random() * daresList.length)];
+                document.getElementById('dare-text-content').innerText = `${currPlayer.name}, échec critique !\n\nGAGE INFERNAL : ${dare}`;
+                document.getElementById('dare-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeDareModal() {
+            document.getElementById('dare-modal').classList.add('hidden');
+            proceedNext();
+        }
+
+        function proceedNext() {
+            gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+            if(gameState.currentPlayerIndex === 0) {
+                gameState.currentRound++;
+            }
+            broadcastState();
+            prepareTurn();
+        }
+
+        function endPartyGame() {
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-end').classList.remove('hidden');
+            document.getElementById('header-controls').classList.add('hidden');
+
+            try {
+                confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } });
+            } catch(e) {}
+
+            const sorted = [...gameState.players].sort((a, b) => b.score - a.score);
+            document.getElementById('end-winner-name').innerText = sorted[0].name;
+            document.getElementById('end-winner-score').innerText = `${sorted[0].score} Points`;
+
+            const list = document.getElementById('end-leaderboard-list');
+            list.innerHTML = '';
+            sorted.forEach((p, idx) => {
+                const medals = ['🥇', '🥈', '🥉'];
+                const rank = idx < 3 ? medals[idx] : `#${idx+1}`;
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-black text-infernalGold w-5">${rank}</span>
+                            <span class="w-3 h-3 rounded-full ${p.color}"></span>
+                            <span class="font-bold text-white">${p.name}</span>
+                        </div>
+                        <span class="font-extrabold text-infernalGold">${p.score} pts</span>
+                    </div>
+                `;
+            });
+        }
+
+        function returnToHome() {
+            stopChrono();
+            document.getElementById('view-game').classList.add('hidden');
+            document.getElementById('view-end').classList.add('hidden');
+            document.getElementById('view-lobby').classList.add('hidden');
+            document.getElementById('view-home').classList.remove('hidden');
+            document.getElementById('header-controls').classList.add('hidden');
+        }
+
+        function renderApp() {
+            if(document.getElementById('view-lobby') && !document.getElementById('view-lobby').classList.contains('hidden')) {
+                updateLobbyUI();
+            }
+            if(document.getElementById('view-game') && !document.getElementById('view-game').classList.contains('hidden')) {
+                const curr = gameState.players[gameState.currentPlayerIndex];
+                if(curr) {
+                    document.getElementById('game-current-name').innerText = curr.name;
+                    document.getElementById('header-score-indicator').innerText = `${curr.score} pts`;
+                }
+            }
+        }
+
+        function toggleLeaderboardModal() {
+            const m = document.getElementById('leaderboard-modal');
+            m.classList.toggle('hidden');
+            if(!m.classList.contains('hidden')) {
+                const sorted = [...gameState.players].sort((a, b) => b.score - a.score);
+                const items = document.getElementById('modal-leaderboard-items');
+                items.innerHTML = '';
+                sorted.forEach((p, idx) => {
+                    items.innerHTML += `
+                        <div class="flex justify-between items-center bg-slate-950 p-2 rounded-lg border border-slate-800 text-xs">
+                            <span class="font-bold text-white">${idx+1}. ${p.name}</span>
+                            <span class="font-extrabold text-infernalGold">${p.score} pts</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function openCustomModal() {
+            document.getElementById('custom-modal').classList.toggle('hidden');
+        }
+
+        function saveCustomChallenge() {
+            const title = document.getElementById('custom-input-title').value.trim();
+            const desc = document.getElementById('custom-input-desc').value.trim();
+            if(!title || !desc) {
+                showAlert("Remplis tous les champs du défi !");
+                return;
+            }
+            customChallengesList.push({
+                title: title,
+                desc: desc,
+                cat: "Défi Custom",
+                pts: 200,
+                icon: "fa-star"
+            });
+            document.getElementById('custom-input-title').value = '';
+            document.getElementById('custom-input-desc').value = '';
+            openCustomModal();
+            showAlert("Défi infernal ajouté avec succès !");
+        }
+    </script>
+</body>
+</html>
