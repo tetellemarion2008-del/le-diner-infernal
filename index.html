@@ -197,9 +197,10 @@
                 </div>
             </div>
 
+            <!-- SECTION MON ÉTAT PERSONNEL (Masquant les autres joueurs pour garder le secret) -->
             <div class="mt-4 pt-4 border-t border-gray-800">
-                <h4 class="text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider">État des Joueurs à la Table</h4>
-                <div id="live-scores" class="space-y-1 max-h-32 overflow-y-auto text-xs"></div>
+                <h4 class="text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider">Mon Bilan Secret</h4>
+                <div id="my-live-score" class="space-y-1 text-xs"></div>
             </div>
 
             <div id="host-podium-trigger" class="hidden mt-6 pt-4 border-t border-gray-800 text-center">
@@ -451,15 +452,12 @@
             const actualText = target.currentChallenge.text.toLowerCase();
             const cleanedGuess = (guessText || "").toLowerCase().trim();
             
-            // Extraction de mots significatifs de la consigne (on enlève les mots de liaison de moins de 4 lettres)
             const stopWords = ['de', 'la', 'le', 'les', 'des', 'un', 'une', 'et', 'en', 'à', 'aux', 'sur', 'par', 'que', 'qui', 'pas', 'ne'];
             const actualKeywords = actualText.split(/[\s,.-]+/).filter(w => w.length > 3 && !stopWords.includes(w));
             
-            // Vérification précise : le joueur doit citer au moins un mot-clé fort ou une expression précise de l'objectif
             const guessWords = cleanedGuess.split(/[\s,.-]+/).filter(w => w.length > 2);
             let matchingKeywordsCount = actualKeywords.filter(kw => guessWords.some(gw => kw.includes(gw) || gw.includes(kw))).length;
             
-            // Condition de validation précise stricte
             let isCorrect = matchingKeywordsCount >= 1 || (cleanedGuess.length > 5 && actualText.includes(cleanedGuess));
 
             if (isCorrect) {
@@ -473,25 +471,23 @@
                 target.timerStarted = false;
                 target.status = 'waiting'; 
                 
-                // Notifier la cible précisément
                 target.notification = `${accuser.name} a deviné votre objectif !`;
 
                 manageRandomBuzzer();
                 broadcastGameState();
 
-                // Envoyer un ordre spécial si le cible est un client distant
                 connections.forEach(c => {
                     if (c.peer === target.id) {
                         c.send({ type: 'NOTIFIED', msg: target.notification });
                     }
                 });
             } else {
-                // Mauvaise accusation (pas assez précis)
+                // Mauvaise accusation (pas assez précis) -> La cible NE perd PAS son chrono, il continue !
                 accuser.score -= 25; 
                 gameData.consecutiveFails++;
 
                 if (gameData.consecutiveFails >= 3) {
-                    gameData.buzzerBlockedUntil = Date.now() + 90000; // 1 min 30
+                    gameData.buzzerBlockedUntil = Date.now() + 90000;
                     gameData.consecutiveFails = 0;
                     connections.forEach(c => c.send({ type: 'GLOBAL_BUZZ_PENALTY', duration: 90000 }));
                     applyGlobalBuzzerPenalty(90000);
@@ -905,7 +901,6 @@
 
                 document.getElementById('round-counter').innerText = `${gameData.round} / ${gameData.maxRounds}`;
 
-                // Afficher la notification si présente
                 const notif = document.getElementById('target-notification');
                 const notifText = document.getElementById('notification-text');
                 if (me && me.notification) {
@@ -936,29 +931,30 @@
                     }
                 }
 
-                document.getElementById('live-scores').innerHTML = gameData.players.map((p) => {
+                // Affichage uniquement de son propre profil/score secret pour ne pas spoiler les autres
+                if (me) {
                     let badge = '';
-                    if (p.status === 'waiting') badge = '<span class="text-xs text-yellow-400">Prêt 🎡</span>';
-                    else if (p.status === 'playing') {
-                        badge = p.timerStarted ? '<span class="text-xs text-indigo-400 font-bold">Actif ⏳</span>' : '<span class="text-xs text-blue-300">En attente</span>';
+                    if (me.status === 'waiting') badge = '<span class="text-xs text-yellow-400">Prêt 🎡</span>';
+                    else if (me.status === 'playing') {
+                        badge = me.timerStarted ? '<span class="text-xs text-indigo-400 font-bold">Actif ⏳</span>' : '<span class="text-xs text-blue-300">En attente</span>';
                     }
 
-                    return `
-                        <div class="flex justify-between items-center text-gray-300 bg-gray-800/40 px-2 py-2 rounded">
+                    document.getElementById('my-live-score').innerHTML = `
+                        <div class="flex justify-between items-center text-gray-300 bg-gray-800/40 px-3 py-2 rounded">
                             <div class="flex items-center space-x-2">
-                                <img src="${p.avatarUrl}" class="w-6 h-6 rounded-lg bg-gray-900 border border-red-500 object-cover">
+                                <img src="${me.avatarUrl}" class="w-6 h-6 rounded-lg bg-gray-900 border border-red-500 object-cover">
                                 <div>
-                                    <span class="font-bold text-xs">${p.name} ${p.id === myId ? '(Toi)' : ''}</span>
-                                    <div class="text-[9px] text-gray-400">${p.title || ''}</div>
+                                    <span class="font-bold text-xs">${me.name} (Toi)</span>
+                                    <div class="text-[9px] text-gray-400">${me.title || ''}</div>
                                 </div>
                             </div>
                             <div class="flex items-center space-x-2">
                                 ${badge}
-                                <span class="font-bold text-red-400 text-xs">${p.score} pts</span>
+                                <span class="font-bold text-red-400 text-xs">${me.score} pts</span>
                             </div>
                         </div>
                     `;
-                }).join('');
+                }
             }
 
             if (gameData.phase === 'podium') {
