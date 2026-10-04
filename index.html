@@ -23,7 +23,7 @@
 
     <header class="w-full max-w-md text-center py-4">
         <h1 class="text-4xl font-900 tracking-wider text-red-500 uppercase glow-red">🔥 Le Dîner Infernal 🔥</h1>
-        <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Édition 200 Défis & Chrono</p>
+        <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Édition Ultime Chrono & Défis 60s</p>
     </header>
 
     <main id="app" class="w-full max-w-md flex-1 flex flex-col justify-center items-center">
@@ -72,7 +72,7 @@
             <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
                 <div>
                     <span class="text-xs text-gray-400 uppercase">Statut :</span>
-                    <h3 id="player-status-title" class="text-lg font-black text-red-400">En route</h3>
+                    <h3 id="player-status-title" class="text-lg font-black text-red-400">À toi de jouer</h3>
                 </div>
                 <div class="text-right">
                     <span class="text-xs text-gray-400 uppercase">Manche</span>
@@ -118,13 +118,19 @@
                 <h4 class="text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider">État des Joueurs à la Table</h4>
                 <div id="live-scores" class="space-y-1 max-h-32 overflow-y-auto text-xs"></div>
             </div>
+
+            <!-- BOUTON HÔTE : VOIR LE PODIUM & RÉSULTATS -->
+            <div id="host-podium-trigger" class="hidden mt-6 pt-4 border-t border-gray-800 text-center">
+                <button onclick="showPodiumScreen()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-gray-950 font-extrabold py-3 rounded-xl transition uppercase text-sm shadow-lg cursor-pointer">🏆 Afficher les Résultats & Podium (Hôte)</button>
+            </div>
         </div>
 
-        <!-- ÉCRAN 4 : PODIUM -->
+        <!-- ÉCRAN 4 : PODIUM & RÉSULTATS -->
         <div id="screen-podium" class="w-full bg-gray-900/90 border border-red-500/50 rounded-2xl p-6 glow-box backdrop-blur-md hidden text-center">
-            <h2 class="text-3xl font-black text-red-500 uppercase glow-red mb-2">Fin du Dîner ! 🏆</h2>
+            <h2 class="text-3xl font-black text-red-500 uppercase glow-red mb-2">Classement Final 🏆</h2>
+            <p class="text-xs text-gray-400 mb-4">Le dîner infernal prend fin ici !</p>
             <div id="podium-list" class="space-y-3 mb-6 text-left"></div>
-            <button onclick="location.reload()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition uppercase text-sm cursor-pointer">Recommencer</button>
+            <button onclick="location.reload()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition uppercase text-sm cursor-pointer">Recommencer une partie</button>
         </div>
 
     </main>
@@ -149,17 +155,19 @@
             maxRounds: 5
         };
 
-        // --- BASE DE 200 DÉFIS ---
+        // --- BASE DE 200 DÉFIS (AVEC CHRONOS LONGS JUSQU'À 60s) ---
         const challenges = [
-            // PAROLE (50)
+            // PAROLE & CHRONOS 60s
+            { cat: '🗣️ Parole', text: 'Pendant 60 secondes, finis obligatoirement toutes tes phrases par "J\'adore les moules".', time: 60 },
+            { cat: '🗣️ Parole', text: 'Pendant 45 secondes, parle uniquement en chuchotant.', time: 45 },
+            { cat: '🗣️ Parole', text: 'Pendant 60 secondes, réponds à chaque question par un miaulement discret.', time: 60 },
+            { cat: '🗣️ Parole', text: 'Pendant 45 secondes, prends une voix de robot en panne.', time: 45 },
             { cat: '🗣️ Parole', text: 'Parle avec un accent québécois prononcé pendant 30 secondes.', time: 30 },
-            { cat: '🗣️ Parole', text: 'Finis obligatoirement tes 3 prochaines phrases par le mot "Wesh".', time: 30 },
-            { cat: '🗣️ Parole', text: 'Exprime-toi uniquement en chuchotant pendant 20 secondes.', time: 20 },
+            { cat: '🗣️ Parole', text: 'Finis tes 3 prochaines phrases par le mot "Wesh".', time: 30 },
             { cat: '🗣️ Parole', text: 'Imite un robot en panne à chaque fois que quelqu’un prononce ton prénom.', time: 30 },
-            { cat: '🗣️ Parole', text: 'Réponds à toutes les questions qu’on te pose par un miaulement discret.', time: 20 },
             { cat: '🗣️ Parole', text: 'Dis "C’est incroyable!" avec un enthousiasme exagéré toutes les 10 secondes.', time: 30 },
             { cat: '🗣️ Parole', text: 'Prends une voix de narrateur de film dramatique pour dire une banalité.', time: 20 },
-            { cat: '🗣️ Parole', text: 'Connarise ta phrase en y insérant le mot "Patate" au milieu.', time: 20 },
+            { cat: '🗣️ Parole', text: 'Insère le mot "Patate" au milieu de tes phrases pendant 30 secondes.', time: 30 },
             { cat: '🗣️ Parole', text: 'Fais un compliment très bizarre et inattendu au joueur à ta gauche.', time: 20 },
             { cat: '🗣️ Parole', text: 'Prends un accent aristocratique du 18ème siècle pendant 25 secondes.', time: 25 },
             { cat: '🗣️ Parole', text: 'Chante au lieu de parler pour répondre à la prochaine question.', time: 20 },
@@ -171,7 +179,7 @@
             { cat: '🗣️ Parole', text: 'Dis "Incroyable mais faux" après chaque intervention d’un joueur.', time: 25 },
             { cat: '🗣️ Parole', text: 'Prends une voix de vieux sage tibétain pour donner un faux conseil.', time: 20 },
             { cat: '🗣️ Parole', text: 'Raconte une anecdote totalement inventée avec un sérieux de marbre.', time: 30 },
-            { cat: '🗣️ Parole', text: 'Imite le rire de le Malin (Satan) de façon très subtile.', time: 15 },
+            { cat: '🗣️ Parole', text: 'Imite le rire du Malin de façon très subtile.', time: 15 },
             { cat: '🗣️ Parole', text: 'Donne ton avis sur le pain en te prenant pour un critique gastronomique snob.', time: 25 },
             { cat: '🗣️ Parole', text: 'Interdis à tout le monde de dire le mot "Oui" pendant 30 secondes.', time: 30 },
             { cat: '🗣️ Parole', text: 'Fais un compliment en rimant obligatoirement avec le prénom du joueur.', time: 20 },
@@ -180,9 +188,9 @@
             { cat: '🗣️ Parole', text: 'Parle en anglais avec un accent français catastrophique.', time: 20 },
             { cat: '🗣️ Parole', text: 'Fais mine de tousser à chaque fois que quelqu’un dit "Euh".', time: 30 },
             { cat: '🗣️ Parole', text: 'Chuchote un secret absurde à l’oreille du joueur d’en face.', time: 15 },
-            { cat: '🗣️ Parole', text: 'Exprime ta joie comme si tu venais de gagner au loto pour une miette de pain.', time: 20 },
+            { cat: '🗣️️ Parole', text: 'Exprime ta joie comme si tu venais de gagner au loto pour une miette de pain.', time: 20 },
             { cat: '🗣️ Parole', text: 'Utilise uniquement des verbes à l’infinitif pendant 25 secondes.', time: 25 },
-            { cat: '🗣️ Parole', text: 'Fais croire que tu as oublié ton propre prénom pendant 15 secondes.', time: 15 },
+            { cat: '🗣️️ Parole', text: 'Fais croire que tu as oublié ton propre prénom pendant 15 secondes.', time: 15 },
             { cat: '🗣️ Parole', text: 'Proclame haut et fort que tu es le roi/reine des chaises.', time: 15 },
             { cat: '🗣️ Parole', text: 'Dis une phrase en faisant semblant d’avoir le hoquet.', time: 15 },
             { cat: '🗣️ Parole', text: 'Imite la voix d’un GPS qui annonce un recalcul d’itinéraire.', time: 20 },
@@ -200,13 +208,11 @@
             { cat: '🗣️️ Parole', text: 'Chante une phrase de Disney au milieu d’une discussion.', time: 15 },
             { cat: '🗣️ Parole', text: 'Fais un commentaire de critique d’art sur une simple serviette en papier.', time: 20 },
             { cat: '🗣️ Parole', text: 'Propose un marché absurde à ton voisin de droite.', time: 20 },
-            { cat: '🗣️ Parole', text: 'Complimente la chaise sur laquelle tu es assis.', time: 15 },
-            { cat: '🗣️ Parole', text: 'Termine chaque phrase par "Crois-moi sur parole".', time: 25 },
 
-            // OBJETS À PRENDRE / TOUCHER (40)
-            { cat: '🎒 Objet', text: 'Attrape discrètement une cuillère et pose-la sur ta tête pendant 10 secondes.', time: 20 },
+            // OBJETS À PRENDRE / TOUCHER
+            { cat: '🎒 Objet', text: 'Pendant 45 secondes, garde une serviette de table posée sur ta tête.', time: 45 },
+            { cat: '🎒 Objet', text: 'Attrape discrètement une cuillère et pose-la sur ta tête pendant 15 secondes.', time: 15 },
             { cat: '🎒 Objet', text: 'Prends une serviette de table et mets-la sur ton épaule comme une écharpe chic.', time: 20 },
-            { cat: '🎒 Objet', text: 'Touchez le nez de quelqu’un (ou fais semblant) avec un objet de la table.', time: 15 },
             { cat: '🎒 Objet', text: 'Mets un verre devant toi à l’envers pendant 20 secondes.', time: 20 },
             { cat: '🎒 Objet', text: 'Prends ton téléphone et pose-le face contre table très rapidement.', time: 15 },
             { cat: '🎒 Objet', text: 'Fais faire un tour complet à une assiette vide sur la table.', time: 15 },
@@ -223,31 +229,31 @@
             { cat: '🎒 Objet', text: 'Prends une serviette en papier et froisse-la en boule parfaite.', time: 20 },
             { cat: '🎒 Objet', text: 'Échange ta place de verre avec ton voisin de droite.', time: 20 },
             { cat: '🎒 Objet', text: 'Construis une mini-tour avec deux objets de la table.', time: 25 },
-            { cat: '🎒 Objet', text: 'Prends un objet et regarde-le fixement comme s’il s’agissait d’un artefact extraterrestre.', time: 20 },
+            { cat: '🎒 Objet', text: 'Prends un objet et regarde-le fixement comme un artefact extraterrestre.', time: 20 },
             { cat: '🎒 Objet', text: 'Mets ta serviette en boule sous ton menton.', time: 15 },
             { cat: '🎒 Objet', text: 'Fais tourner un stylo ou un couvert entre tes doigts sans le faire tomber.', time: 20 },
             { cat: '🎒 Objet', text: 'Cache ton verre derrière ton assiette.', time: 15 },
-            { cat: '🎒 Objet', text: 'Prends une bague ou un bijou (ou un objet minuscule) et pose-le sur ton nez.', time: 15 },
+            { cat: '🎒 Objet', text: 'Prends un bijou ou petit objet et pose-le sur ton nez.', time: 15 },
             { cat: '🎒 Objet', text: 'Aligne trois objets de la table au cordeau millimétré.', time: 20 },
             { cat: '🎒 Objet', text: 'Mets un couteau à l’horizontale parfaite devant ton assiette.', time: 15 },
             { cat: '🎒 Objet', text: 'Prends ton verre avec les deux mains comme un enfant de 3 ans.', time: 15 },
             { cat: '🎒 Objet', text: 'Fais un signe de croix bizarre au-dessus d’un morceau de pain.', time: 15 },
             { cat: '🎒 Objet', text: 'Touche ta chaise avec ton pied pendant 15 secondes.', time: 15 },
-            { cat: '🎒 Objet', text: 'Prends un objet de la table et donne-le à ton voisin en disant "C’est pour toi".', time: 20 },
+            { cat: '🎒 Objet', text: 'Prends un objet et donne-le à ton voisin en disant "C’est pour toi".', time: 20 },
             { cat: '🎒 Objet', text: 'Mets une serviette sur ta main comme un gant de cuisine.', time: 20 },
             { cat: '🎒 Objet', text: 'Fais semblant de nettoyer frénétiquement une tache invisible sur la table.', time: 20 },
             { cat: '🎒 Objet', text: 'Prends ton téléphone, fais semblant de prendre une photo de ta main.', time: 15 },
             { cat: '🎒 Objet', text: 'Mets un objet sous ta cuisse pendant 20 secondes.', time: 20 },
-            { cat: '🎒 Objet', text: 'Prends le sel ou le poivre (ou un condiment) et fais-le passer à gauche.', time: 20 },
+            { cat: '🎒 Objet', text: 'Prends le sel ou le poivre et fais-le passer à gauche.', time: 20 },
             { cat: '🎒 Objet', text: 'Pointe un objet du doigt avec un air extrêmement grave.', time: 15 },
             { cat: '🎒 Objet', text: 'Retourne ton verre vide à l’envers.', time: 15 },
             { cat: '🎒 Objet', text: 'Empile deux serviettes en papier l’une sur l’autre.', time: 15 },
-            { cat: '🎒 Objet', text: 'Touche le bord de la table avec ton front (attention à l’assiette !).', time: 15 },
+            { cat: '🎒 Objet', text: 'Touche le bord de la table avec ton front.', time: 15 },
             { cat: '🎒 Objet', text: 'Prends un objet et pose-le par terre discrètement.', time: 20 },
 
-            // PHYSIQUE / MIME (40)
+            // PHYSIQUE / MIME
+            { cat: '🎭 Mime', text: 'Pendant 60 secondes, garde les bras croisés et fais la tête.', time: 60 },
             { cat: '🎭 Mime', text: 'Fais un clin d’œil discret au joueur en face toutes les 10 secondes.', time: 25 },
-            { cat: '🎭 Mime', text: 'Garde les bras croisés et boude ostensiblement pendant 25 secondes.', time: 25 },
             { cat: '🎭 Mime', text: 'Tire la langue 3 secondes dès que quelqu’un rit.', time: 20 },
             { cat: '🎭 Mime', text: 'Fais semblant d’avoir un tic nerveux à l’œil droit pendant 20 secondes.', time: 20 },
             { cat: '🎭 Mime', text: 'Hausse les épaules de manière exagérée à chaque question.', time: 20 },
@@ -256,39 +262,39 @@
             { cat: '🎭 Mime', text: 'Ferme les yeux pendant 10 secondes en plein milieu d’une discussion.', time: 15 },
             { cat: '🎭 Mime', text: 'Fais semblant de t’endormir la tête penchée sur le côté.', time: 20 },
             { cat: '🎭 Mime', text: 'Imite une statue de cire immobile pendant 20 secondes.', time: 20 },
-            { cat: '🎭 Mime', text: 'Bâille très fort de façon théâtrale et théâtralement contagieuse.', time: 15 },
-            { cat: '🎭 Mime', text: 'Fais un signe de rockeur (cornes avec les doigts) sous la table.', time: 15 },
+            { cat: '🎭 Mime', text: 'Bâille très fort de façon théâtrale.', time: 15 },
+            { cat: '🎭 Mime', text: 'Fais un signe de rockeur sous la table.', time: 15 },
             { cat: '🎭 Mime', text: 'Touche tes deux lobes d’oreilles en même temps pendant 15 secondes.', time: 15 },
             { cat: '🎭 Mime', text: 'Fais semblant de jouer du piano imaginaire sur tes genoux.', time: 20 },
-            { cat: '🎭 Mime', text: 'Pousse ta chaise d’un tout petit centimetre en arrière de façon mystérieuse.', time: 15 },
+            { cat: '🎭 Mime', text: 'Pousse ta chaise d’un tout petit centimètre en arrière.', time: 15 },
             { cat: '🎭 Mime', text: 'Garde la tête complètement immobile en bougeant juste les yeux.', time: 20 },
             { cat: '🎭 Mime', text: 'Fais un sourire ultra-bright figé pendant 20 secondes.', time: 20 },
             { cat: '🎭 Mime', text: 'Mets ton index devant ta bouche pour faire "Chut" à vide.', time: 15 },
             { cat: '🎭 Mime', text: 'Fais semblant de recevoir une brise de vent imaginaire.', time: 15 },
             { cat: '🎭 Mime', text: 'Croise les jambes et balance ton pied en rythme.', time: 20 },
             { cat: '🎭 Mime', text: 'Pousse un soupir de soulagement cosmique sans raison.', time: 15 },
-            { cat: '🎭 Mime', text: 'Fais semblant d’ajuster une cravate invisible ou des lunettes imaginaires.', time: 15 },
-            { cat: '🎭 Mime', text: 'Mets ta main devant ton front comme pour te protéger du soleil en intérieur.', time: 15 },
-            { cat: '🎭 Mime', text: 'Fais un signe de victoire (V avec les doigts) discrets sous la table.', time: 15 },
-            { cat: '🎭 Mime', text: 'Imite un mime coincé dans une boîte invisible pendant 15 secondes.', time: 15 },
+            { cat: '🎭 Mime', text: 'Fais semblant d’ajuster une cravate invisible.', time: 15 },
+            { cat: '🎭 Mime', text: 'Mets ta main devant ton front comme pour te protéger du soleil.', time: 15 },
+            { cat: '🎭 Mime', text: 'Fais un signe de victoire discrets sous la table.', time: 15 },
+            { cat: '🎭 Mime', text: 'Imite un mime coincé dans une boîte invisible.', time: 15 },
             { cat: '🎭 Mime', text: 'Pince-toi le nez pendant 5 secondes l’air grave.', time: 10 },
-            { cat: '🎭 Mime', text: 'Fais un signe de tête approbateur non-stop pendant 15 secondes.', time: 15 },
+            { cat: '🎭 Mime', text: 'Fais un signe de tête approbateur non-stop.', time: 15 },
             { cat: '🎭 Mime', text: 'Lève les sourcils de haut en bas trois fois de suite.', time: 10 },
             { cat: '🎭 Mime', text: 'Fais semblant d’enfiler des gants invisibles très serrés.', time: 20 },
-            { cat: '🎭 Mime', text: 'Mets tes mains en l’oraison (comme pour prier) sur ton menton.', time: 15 },
-            { cat: '🎭 Mime', text: 'Fais un geste de "zéro" avec tes doigts en direction du plafond.', time: 15 },
+            { cat: '🎭 Mime', text: 'Mets tes mains en l’oraison sur ton menton.', time: 15 },
+            { cat: '🎭 Mime', text: 'Fais un geste de "zéro" avec tes doigts vers le plafond.', time: 15 },
             { cat: '🎭 Mime', text: 'Imite un chat qui s’étire sur place.', time: 15 },
-            { cat: '🎭 Mime', text: 'Fais semblant d’essuyer une sueur imaginaire sur ton front.', time: 15 },
+            { cat: '🎭 Mime', text: 'Fais semblant d’essuyer une sueur imaginaire.', time: 15 },
             { cat: '🎭 Mime', text: 'Cligne des yeux dix fois très rapidement d’affilée.', time: 10 },
-            { cat: '🎭 Mime', text: 'Mets ton poing sous ton menton en mode penseur de Rodin.', time: 20 },
+            { cat: '🎭 Mime', text: 'Mets ton poing sous ton menton en mode penseur.', time: 20 },
             { cat: '🎭 Mime', text: 'Fais un signe de désapprobation de la tête très lent.', time: 15 },
-            { cat: '🎭 Mime', text: 'Imite une poule en remettant tes mains sous tes aisselles (discrètement).', time: 15 },
+            { cat: '🎭 Mime', text: 'Imite une poule discrètement sous tes aisselles.', time: 15 },
             { cat: '🎭 Mime', text: 'Mets tes doigts en forme de pyramide sous ton nez.', time: 15 },
-            { cat: '🎭 Mime', text: 'Fais un signe d’au revoir de la main à quelqu’un d’invisible.', time: 15 },
-            { cat: '🎭 Mime', text: 'Baisse les épaules d’un coup sec comme si tu lâchais un poids.', time: 10 },
+            { cat: '🎭 Mime', text: 'Fais un signe d’au revoir à quelqu’un d’invisible.', time: 15 },
+            { cat: '🎭 Mime', text: 'Baisse les épaules d’un coup sec.', time: 10 },
 
-            // MENTAL / SOCIAL / PIQUANT (70)
-            { cat: '🔥 Piquant', text: 'Raconte un mensonge éhonté sur ton enfance et essaie de le rendre crédible.', time: 30 },
+            // MENTAL / SOCIAL / PIQUANT
+            { cat: '🔥 Piquant', text: 'Raconte un mensonge éhonté sur ton enfance pendant 60 secondes.', time: 60 },
             { cat: '🔥 Piquant', text: 'Fais croire que tu as décroché un rôle de figurant dans un film de bouleversant.', time: 30 },
             { cat: '🔥 Piquant', text: 'Désigne du doigt la personne qui, selon toi, ment le plus souvent ici.', time: 20 },
             { cat: '🔥 Piquant', text: 'Invente un défaut totalement ridicule et attribue-le au joueur à ta gauche.', time: 20 },
@@ -304,14 +310,14 @@
             { cat: '🔥 Piquant', text: 'Invente un acronyme farfelu pour le prénom du joueur d’en face.', time: 20 },
             { cat: '🔥 Piquant', text: 'Affirme que tu possèdes des pouvoirs de télékinésie sur les miettes de pain.', time: 25 },
             { cat: '🔥 Piquant', text: 'Fais un faux lapsus révélateur sur un secret que tu n’as pas.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Proclame que le meilleur super-pouvoir est de pouvoir parler aux grille-pains.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Invente une règle de vie absurde que tout le monde devrait suivre selon toi.', time: 25 },
+            { cat: '🔥 Piquant', text: 'Proclame que le meilleur super-pouvoir est de parler aux grille-pains.', time: 20 },
+            { cat: '🔥 Piquant', text: 'Invente une règle de vie absurde que tout le monde devrait suivre.', time: 25 },
             { cat: '🔥 Piquant', text: 'Fais semblant d’avoir une illumination philosophique sur un détail ridicule.', time: 25 },
             { cat: '🔥 Piquant', text: 'Dis à ton voisin qu’il a un truc sur la joue (alors qu’il n’a rien).', time: 15 },
             { cat: '🔥 Piquant', text: 'Soutiens que tu pourrais survivre dans la jungle avec juste une cuillère.', time: 20 },
             { cat: '🔥 Piquant', text: 'Invente un nom de groupe de rock ringard avec les prénoms de la table.', time: 25 },
             { cat: '🔥 Piquant', text: 'Fais une grimace horrible dès que le joueur à ta gauche tourne la tête.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Affirme haut et fort que tu ne dors jamais (tu recharges tes batteries).', time: 20 },
+            { cat: '🔥 Piquant', text: 'Affirme haut et fort que tu ne dors jamais.', time: 20 },
             { cat: '🔥 Piquant', text: 'Raconte ton "pire cauchemar" en y incluant des éléments de cuisine.', time: 25 },
             { cat: '🔥 Piquant', text: 'Fais semblant de tout critiquer de façon excessivement hautaine.', time: 25 },
             { cat: '🔥 Piquant', text: 'Soutiens que tu as inventé le concept de la tartine beurrée.', time: 20 },
@@ -336,28 +342,8 @@
             { cat: '🔥 Piquant', text: 'Affirme que tu as un ancêtre célèbre qui était pirate de l’espace.', time: 20 },
             { cat: '🔥 Piquant', text: 'Fais un pari absurde sur le fait que le prochain plat sera rouge.', time: 20 },
             { cat: '🔥 Piquant', text: 'Invente un dicton populaire qui n’a absolument aucun sens.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Fais semblant d’être allergique à un mot courant (ex: "Table").', time: 25 },
-            { cat: '🔥 Piquant', text: 'Proclame que la gravité a un léger problème de réglage aujourd’hui.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Soutiens que tu portes toujours tes chaussettes à l’envers pour la chance.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Fais semblant de recevoir un message télépathique urgent.', time: 15 },
-            { cat: '🔥 Piquant', text: 'Invente une résolution du nouvel an en plein milieu de l’année.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Affirme que tu ne manges que des aliments qui commencent par la lettre M.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Fais mine de diriger un orchestre symphonique invisible avec tes couverts.', time: 25 },
-            { cat: '🔥 Piquant', text: 'Raconte une blague nulle avec un sérieux de procureur.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Soutiens que tu as déjà dormi 48 heures d’affilée.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Fais semblant de te faire passer pour ton propre jumeau maléfique.', time: 25 },
-            { cat: '🔥 Piquant', text: 'Invente un faux record du monde que tu détiens secrètement.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Affirme que ton plat préféré absolu est le caillou bouilli.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Fais mine de négocier avec ta fourchette pour qu’elle pique mieux.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Proclame que la journée d’hier a duré 28 heures.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Soutiens que tu sais faire l’hélicoptère avec tes oreilles.', time: 15 },
-            { cat: '🔥 Piquant', text: 'Fais semblant de chercher tes lunettes alors qu’elles sont sur ton nez.', time: 15 },
-            { cat: '🔥 Piquant', text: 'Invente une excuse complètement folle pour quitter la pièce 5 secondes.', time: 25 },
-            { cat: '🔥 Piquant', text: 'Affirme que le chiffre 7 est le responsable de tous tes malheurs.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Fais mine d’ausculter ton verre comme s’il s’agissait d’un patient malade.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Raconte ton pire rendez-vous amoureux en remplaçant la personne par un grille-pain.', time: 30 },
-            { cat: '🔥 Piquant', text: 'Soutiens que tu possèdes la plus grande collection de trombones du monde.', time: 20 },
-            { cat: '🔥 Piquant', text: 'Fais un clin d’œil dramatique à la caméra imaginaire de la pièce.', time: 15 }
+            { cat: '🔥 Piquant', text: 'Fais semblant d’être allergique à un mot courant.', time: 25 },
+            { cat: '🔥 Piquant', text: 'Proclame que la gravité a un léger problème de réglage aujourd’hui.', time: 20 }
         ];
 
         function hostGame() {
@@ -429,12 +415,10 @@
             else if (data.type === 'SPIN') {
                 const player = gameData.players.find(p => p.id === conn.peer);
                 if (player && player.status === 'waiting') {
-                    playSoundSpin();
                     const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
                     player.currentChallenge = randomChallenge;
                     player.timeLeft = randomChallenge.time;
                     player.status = 'playing';
-                    checkRoundProgression();
                     broadcastGameState();
                 }
             }
@@ -442,15 +426,12 @@
                 const player = gameData.players.find(p => p.id === conn.peer);
                 if (player && player.status === 'playing') {
                     if (data.success) {
-                        playSoundSuccess();
                         player.score += 100;
-                    } else {
-                        playSoundFail();
                     }
                     player.currentChallenge = null;
                     player.timeLeft = 0;
-                    player.status = 'done';
-                    checkRoundProgression();
+                    // FIX MULTI : On remet le statut à 'waiting' pour qu'ils puissent re-tourner la roue autant qu'ils veulent
+                    player.status = 'waiting'; 
                     broadcastGameState();
                 }
             }
@@ -459,16 +440,13 @@
                 const target = gameData.players.find(p => p.id === data.targetId);
 
                 if (accuser && target && target.status === 'playing') {
-                    playSoundSuccess();
                     accuser.score += 75; 
                     target.score -= 50;  
                     target.currentChallenge = null;
                     target.timeLeft = 0;
-                    target.status = 'done'; 
-                    checkRoundProgression();
+                    target.status = 'waiting'; 
                     broadcastGameState();
                 } else {
-                    playSoundFail();
                     accuser.score -= 25; 
                     broadcastGameState();
                 }
@@ -494,30 +472,10 @@
             broadcastGameState();
         }
 
-        function checkRoundProgression() {
-            const allDone = gameData.players.every(p => p.status === 'done');
-            if (allDone) {
-                gameData.round++;
-                if (gameData.round > gameData.maxRounds) {
-                    gameData.phase = 'podium';
-                    triggerConfetti();
-                } else {
-                    gameData.players.forEach(p => {
-                        p.status = 'waiting';
-                        p.currentChallenge = null;
-                        p.timeLeft = 0;
-                    });
-                }
-            }
-        }
-
         // --- INVITÉ : RÉCEPTION ---
         function handleGuestIncomingData(data) {
             if (data.type === 'STATE_UPDATE') {
                 gameData = data.state;
-                if (gameData.phase === 'podium') {
-                    triggerConfetti();
-                }
                 updateScreen();
             }
         }
@@ -530,6 +488,7 @@
                 const me = gameData.players.find(p => p.id === myId);
                 if (!me || me.status !== 'playing' || me.timeLeft <= 0) {
                     clearInterval(timerInterval);
+                    timerInterval = null;
                     return;
                 }
                 
@@ -539,11 +498,14 @@
                     timerEl.innerText = `⏱️ ${me.timeLeft}s`;
                     if (me.timeLeft <= 5) {
                         timerEl.classList.add('text-red-500', 'animate-ping');
+                    } else {
+                        timerEl.classList.remove('text-red-500', 'animate-ping');
                     }
                 }
 
                 if (me.timeLeft <= 0) {
                     clearInterval(timerInterval);
+                    timerInterval = null;
                 }
             }, 1000);
         }
@@ -559,16 +521,19 @@
                 me.currentChallenge = randomChallenge;
                 me.timeLeft = randomChallenge.time;
                 me.status = 'playing';
-                checkRoundProgression();
                 broadcastGameState();
                 startLocalTimer();
             } else {
+                playSoundSpin();
                 hostConnection.send({ type: 'SPIN' });
             }
         }
 
         function validateChallenge(success) {
-            if (timerInterval) clearInterval(timerInterval);
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
             const me = gameData.players.find(p => p.id === myId);
             if (!me || me.status !== 'playing') return;
 
@@ -581,10 +546,10 @@
                 }
                 me.currentChallenge = null;
                 me.timeLeft = 0;
-                me.status = 'done';
-                checkRoundProgression();
+                me.status = 'waiting'; // Permet de rejouer autant de fois que vous voulez
                 broadcastGameState();
             } else {
+                if (success) playSoundSuccess(); else playSoundFail();
                 hostConnection.send({ type: 'VALIDATE', success: success });
             }
         }
@@ -611,8 +576,7 @@
                     target.score -= 50;
                     target.currentChallenge = null;
                     target.timeLeft = 0;
-                    target.status = 'done';
-                    checkRoundProgression();
+                    target.status = 'waiting';
                     broadcastGameState();
                 } else {
                     playSoundFail();
@@ -623,6 +587,13 @@
                 hostConnection.send({ type: 'ACCUSE', targetId: targetId });
             }
             select.value = "";
+        }
+
+        // L'hôte peut afficher le podium quand il le souhaite
+        function showPodiumScreen() {
+            gameData.phase = 'podium';
+            triggerConfetti();
+            broadcastGameState();
         }
 
         // --- INTERFACE ---
@@ -653,27 +624,25 @@
                 document.getElementById('round-counter').innerText = `${gameData.round} / ${gameData.maxRounds}`;
 
                 const hasActiveChallenge = (status === 'playing' && me.currentChallenge !== null);
-                document.getElementById('wheel-container').classList.toggle('hidden', hasActiveChallenge || status === 'done');
+                document.getElementById('wheel-container').classList.toggle('hidden', hasActiveChallenge);
                 document.getElementById('challenge-container').classList.toggle('hidden', !hasActiveChallenge);
 
+                // Afficher le bouton Podium uniquement pour l'Hôte dans l'écran de jeu
+                document.getElementById('host-podium-trigger').classList.toggle('hidden', myRole !== 'host');
+
                 if (status === 'waiting') {
-                    document.getElementById('player-status-title').innerText = "À toi de jouer !";
+                    document.getElementById('player-status-title').innerText = "Prêt pour un tour ?";
                     document.getElementById('wheel-text').innerText = "TOURNE TA ROUE";
-                    document.getElementById('btn-spin').classList.remove('hidden');
                 } else if (status === 'playing') {
-                    document.getElementById('player-status-title').innerText = "Défi Secret en cours...";
+                    document.getElementById('player-status-title').innerText = "Défi Secret en cours !";
                     document.getElementById('challenge-category').innerText = me.currentChallenge.cat;
                     document.getElementById('challenge-text').innerText = me.currentChallenge.text;
-                    document.getElementById('timer-display').innerText = `⏱️️ ${me.timeLeft}s`;
+                    document.getElementById('timer-display').innerText = `⏱ ${me.timeLeft}s`;
                     
-                    // Lancer le chrono si pas déjà actif
+                    // Lancer le chrono si pas déjà actif pour les invités
                     if (!timerInterval && myRole !== 'host') {
                         startLocalTimer();
                     }
-                } else if (status === 'done') {
-                    if (timerInterval) clearInterval(timerInterval);
-                    document.getElementById('player-status-title').innerText = "Manche validée ! En attente des autres...";
-                    document.getElementById('wheel-container').innerHTML = `<p class="text-gray-400 italic py-8">Tu as fini ton défi pour cette manche. Attends que les autres joueurs finissent.</p>`;
                 }
 
                 // Mise à jour de la liste déroulante des suspects
@@ -682,16 +651,15 @@
                 selectAccuse.innerHTML = '<option value="">Choisir un joueur suspect...</option>' + 
                     gameData.players
                         .filter(p => p.id !== myId)
-                        .map(p => `<option value="${p.id}">${p.name} (${p.status === 'playing' ? 'En plein défi ?' : 'Inactif/Fini'})</option>`)
+                        .map(p => `<option value="${p.id}">${p.name} (${p.status === 'playing' ? 'En plein défi 🔥' : 'En attente'})</option>`)
                         .join('');
                 selectAccuse.value = currentSelection;
 
                 // Liste globale de l'état des joueurs
                 document.getElementById('live-scores').innerHTML = gameData.players.map((p) => {
                     let badge = '';
-                    if (p.status === 'waiting') badge = '<span class="text-xs text-yellow-400">Prépare sa roue</span>';
+                    if (p.status === 'waiting') badge = '<span class="text-xs text-yellow-400">Prêt à tourner 🎡</span>';
                     else if (p.status === 'playing') badge = '<span class="text-xs text-orange-400 font-bold animate-pulse">En plein défi secret 🔥</span>';
-                    else if (p.status === 'done') badge = '<span class="text-xs text-green-400">Validé ✅</span>';
 
                     return `
                         <div class="flex justify-between items-center text-gray-300 bg-gray-800/40 px-2 py-1.5 rounded">
@@ -706,7 +674,10 @@
             }
 
             if (gameData.phase === 'podium') {
-                if (timerInterval) clearInterval(timerInterval);
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
                 const sorted = [...gameData.players].sort((a,b) => b.score - a.score);
                 document.getElementById('podium-list').innerHTML = sorted.map((p, i) => `
                     <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl border ${i === 0 ? 'border-yellow-500 bg-yellow-950/20' : 'border-gray-700'}">
