@@ -138,14 +138,16 @@
                 ⚠ <span id="notification-text">Quelqu'un a deviné votre objectif !</span>
             </div>
 
-            <!-- MODAL DE CONFIRMATION DÉFI HARD -->
+            <!-- MODAL DE CONFIRMATION DÉFI HARD (CACHÉ) -->
             <div id="hard-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
                 <div class="bg-gray-900 border-2 border-red-600 rounded-2xl p-6 max-w-xs text-center glow-box space-y-4">
                     <h3 class="text-lg font-black text-red-500 uppercase glow-red">🔥 ATTENTION DÉFI HARD 🔥</h3>
-                    <p id="hard-modal-text" class="text-xs text-gray-300 leading-relaxed"></p>
-                    <div class="bg-red-950/50 border border-red-500/40 rounded-xl p-2 text-[11px] text-red-300">
-                        ⚡ Ce défi compte DOUBLE : rapporte <strong>4 points</strong> en cas de réussite (contre 2 points pour un normal).
+                    <p class="text-xs text-gray-300 leading-relaxed">Tu es tombé sur un défi classé <strong>HARD</strong> secret ! Son contenu exact t'est totalement inconnu pour l'instant.</p>
+                    <div class="bg-red-950/50 border border-red-500/40 rounded-xl p-2.5 text-[11px] text-red-300 space-y-1">
+                        <div>⚡ Compte DOUBLE : <strong>4 points</strong> en cas de réussite.</div>
+                        <div>❌ En cas d'échec / abandon : <strong>-2 points</strong> !</div>
                     </div>
+                    <p class="text-[11px] text-yellow-400 font-bold uppercase tracking-wide">Acceptes-tu de relever ce défi à l'aveugle ?</p>
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="acceptHardChallenge(true)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer shadow-lg">J'accepte ! 💪</button>
                         <button onclick="acceptHardChallenge(false)" class="bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">Refuser 🔄</button>
@@ -181,7 +183,7 @@
 
                 <div id="validation-buttons" class="grid grid-cols-2 gap-3">
                     <button onclick="validateChallenge(true)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Défi tenu (+<span id="points-success-label">2</span>) ✅</button>
-                    <button onclick="validateChallenge(false)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Abandonné (0) ❌</button>
+                    <button onclick="validateChallenge(false)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Abandonné (<span id="points-fail-label">0</span>) ❌</button>
                 </div>
             </div>
 
@@ -275,7 +277,8 @@
             maxRounds: 5,
             mode: 'table',
             consecutiveFails: 0,
-            buzzerBlockedUntil: 0
+            buzzerBlockedUntil: 0,
+            usedChallengeIds: [] // Pour éviter de répéter les défis
         };
 
         function changeAvatarStyle() {
@@ -404,6 +407,21 @@
             broadcastGameState();
         }
 
+        function getUniqueRandomChallenge(isHardOnly = false) {
+            const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
+            let available = pool.filter(c => !gameData.usedChallengeIds.includes(c.id) && (isHardOnly ? c.isHard : true));
+            
+            // Si tout a été épuisé, on réinitialise la mémoire des défis
+            if (available.length === 0) {
+                gameData.usedChallengeIds = [];
+                available = pool.filter(c => (isHardOnly ? c.isHard : true));
+            }
+
+            const chosen = available[Math.floor(Math.random() * available.length)];
+            gameData.usedChallengeIds.push(chosen.id);
+            return chosen;
+        }
+
         function handleHostIncomingData(conn, data) {
             if (data.type === 'JOIN') {
                 if (!connections.includes(conn)) connections.push(conn);
@@ -436,8 +454,7 @@
             else if (data.type === 'SPIN_REQUEST') {
                 const player = gameData.players.find(p => p.id === conn.peer);
                 if (player && player.status === 'waiting') {
-                    const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
-                    const randomChallenge = pool[Math.floor(Math.random() * pool.length)];
+                    const randomChallenge = getUniqueRandomChallenge(false);
                     
                     if (randomChallenge.isHard) {
                         conn.send({ type: 'PROPOSE_HARD', challenge: randomChallenge });
@@ -453,9 +470,10 @@
                     if (data.accepted) {
                         assignChallengeToPlayer(player, data.challenge);
                     } else {
-                        const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
-                        let normalPool = pool.filter(c => !c.isHard);
-                        let fallbackChallenge = normalPool[Math.floor(Math.random() * normalPool.length)];
+                        let fallbackChallenge = getUniqueRandomChallenge(false);
+                        while (fallbackChallenge.isHard) {
+                            fallbackChallenge = getUniqueRandomChallenge(false);
+                        }
                         assignChallengeToPlayer(player, fallbackChallenge);
                     }
                     broadcastGameState();
@@ -476,7 +494,9 @@
                         const ptsToAdd = player.currentChallenge.isHard ? 4 : 2;
                         player.score += ptsToAdd;
                     } else {
-                        // Échec ou abandon = 0 point (pas de bonus, pas de malus direct sauf si piège)
+                        // Échec ou abandon : -2 pts si hard, 0 pt si normal
+                        const ptsToSubtract = player.currentChallenge.isHard ? 2 : 0;
+                        player.score -= ptsToSubtract;
                     }
                     player.currentChallenge = null;
                     player.timeLeft = 0;
@@ -553,7 +573,7 @@
                     }
                 });
             } else {
-                accuser.score -= 1; // Fausse accusation = pénalité de -1 point aussi
+                accuser.score -= 1; // Fausse accusation = pénalité de -1 point
                 gameData.consecutiveFails++;
 
                 if (gameData.consecutiveFails >= 3) {
@@ -659,12 +679,11 @@
                 location.reload();
             } else if (data.type === 'PROPOSE_HARD') {
                 pendingChallenge = data.challenge;
-                showHardModal(data.challenge.text);
+                showHardModal();
             }
         }
 
-        function showHardModal(text) {
-            document.getElementById('hard-modal-text').innerText = text;
+        function showHardModal() {
             document.getElementById('hard-modal').classList.remove('hidden');
         }
 
@@ -675,9 +694,10 @@
                 if (accepted) {
                     assignChallengeToPlayer(me, pendingChallenge);
                 } else {
-                    const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
-                    let normalPool = pool.filter(c => !c.isHard);
-                    let fallbackChallenge = normalPool[Math.floor(Math.random() * normalPool.length)];
+                    let fallbackChallenge = getUniqueRandomChallenge(false);
+                    while (fallbackChallenge.isHard) {
+                        fallbackChallenge = getUniqueRandomChallenge(false);
+                    }
                     assignChallengeToPlayer(me, fallbackChallenge);
                 }
                 pendingChallenge = null;
@@ -842,6 +862,7 @@
             gameData.round = 1;
             gameData.consecutiveFails = 0;
             gameData.buzzerBlockedUntil = 0;
+            gameData.usedChallengeIds = [];
             gameData.players.forEach(p => {
                 p.score = 0;
                 p.status = 'waiting';
@@ -910,13 +931,12 @@
             if (!me || me.status !== 'waiting') return;
 
             playSoundSpin();
-            const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
-            const randomChallenge = pool[Math.floor(Math.random() * pool.length)];
+            const randomChallenge = getUniqueRandomChallenge(false);
 
             if (myRole === 'host') {
                 if (randomChallenge.isHard) {
                     pendingChallenge = randomChallenge;
-                    showHardModal(randomChallenge.text);
+                    showHardModal();
                 } else {
                     assignChallengeToPlayer(me, randomChallenge);
                     broadcastGameState();
@@ -960,7 +980,9 @@
                     const ptsToAdd = me.currentChallenge.isHard ? 4 : 2;
                     me.score += ptsToAdd;
                 } else {
-                    playSoundFail(); // Échec = 0 points
+                    playSoundFail();
+                    const ptsToSubtract = me.currentChallenge.isHard ? 2 : 0;
+                    me.score -= ptsToSubtract;
                 }
                 me.currentChallenge = null;
                 me.timeLeft = 0;
@@ -1056,9 +1078,9 @@
                     document.getElementById('challenge-text').innerText = me.currentChallenge.text;
                     
                     const ptsLabel = document.getElementById('points-success-label');
-                    if (ptsLabel) {
-                        ptsLabel.innerText = me.currentChallenge.isHard ? "4" : "2";
-                    }
+                    const failLabel = document.getElementById('points-fail-label');
+                    if (ptsLabel) ptsLabel.innerText = me.currentChallenge.isHard ? "4" : "2";
+                    if (failLabel) failLabel.innerText = me.currentChallenge.isHard ? "-2" : "0";
 
                     updateTimerDisplayUI(me.timeLeft, me.maxTime, me.timerStarted);
                     
@@ -1122,33 +1144,33 @@
         updateAvatarPreview();
 
         const challengesTable = [
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90, isHard: false },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120, isHard: false },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90, isHard: false },
-            { cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de dire "oui", "non", "je", et "tu" sous peine de perdre gros.', time: 180, isHard: true },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120, isHard: false },
-            { cat: '🔥 HARD : Table', text: 'Pendant 2 minutes, mange absolument tout ce que tu portes à ta bouche avec tes mains uniquement (interdiction d’utiliser les couverts).', time: 120, isHard: true },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90, isHard: false },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120, isHard: false },
-            { cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de toucher ton verre toi-même : tu dois supplier quelqu’un d’autre de te faire boire.', time: 180, isHard: true },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ton couvert bien à l’horizontale après chaque bouchée.', time: 90, isHard: false },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, demande l’avis du joueur à ta droite sur absolument TOUT ce que tu manges ou bois.', time: 120, isHard: false },
-            { cat: '🔥 HARD : Table', text: 'Pendant 2 minutes, tu dois te nourrir en fermant les yeux à chaque bouchée et deviner chaque ingrédient à haute voix.', time: 120, isHard: true }
+            { id: 't1', cat: '🍽️️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90, isHard: false },
+            { id: 't2', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120, isHard: false },
+            { id: 't3', cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90, isHard: false },
+            { id: 't4_hard', cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de dire "oui", "non", "je", et "tu" sous peine de perdre gros.', time: 180, isHard: true },
+            { id: 't5', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120, isHard: false },
+            { id: 't6_hard', cat: '🔥 HARD : Table', text: 'Pendant 2 minutes, mange absolument tout ce que tu portes à ta bouche avec tes mains uniquement (interdiction d’utiliser les couverts).', time: 120, isHard: true },
+            { id: 't7', cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90, isHard: false },
+            { id: 't8', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120, isHard: false },
+            { id: 't9_hard', cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de toucher ton verre toi-même : tu dois supplier quelqu’un d’autre de te faire boire.', time: 180, isHard: true },
+            { id: 't10', cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ton couvert bien à l’horizontale après chaque bouchée.', time: 90, isHard: false },
+            { id: 't11', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, demande l’avis du joueur à ta droite sur absolument TOUT ce que tu manges ou bois.', time: 120, isHard: false },
+            { id: 't12_hard', cat: '🔥 HARD : Table', text: 'Pendant 2 minutes, tu dois te nourrir en fermant les yeux à chaque bouchée et deviner chaque ingrédient à haute voix.', time: 120, isHard: true }
         ];
 
         const challengesParty = [
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, commence absolument toutes tes phrases par "À mon humble avis...".', time: 90, isHard: false },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, chaque fois que quelqu’un pose une question, réponds par une autre question.', time: 120, isHard: false },
-            { cat: '🔥 HARD : Amis', text: 'Pendant 3 minutes, interdis-toi de sourire ou de rire, peu importe ce qu’on raconte.', time: 180, isHard: true },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, adopte une position de penseur (main sur le menton) en opinant à tout ce qu’on dit.', time: 90, isHard: false },
-            { cat: '🔥 HARD : Amis', text: 'Pendant 2 minutes, parle uniquement en chuchotant de façon ultra-intrigante.', time: 120, isHard: true },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, fais semblant d’avoir un tic nerveux à l’œil gauche.', time: 90, isHard: false },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, glisse le mot "Cactus" dans la discussion sans que ça paraisse suspect.', time: 120, isHard: false },
-            { cat: '🔥 HARD : Amis', text: 'Pendant 3 minutes, tu dois te lever et changer de place dès qu’un joueur prononce une voyelle précise (ex: la lettre A).', time: 180, isHard: true },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, pose ton téléphone face contre table et interdis-toi de le regarder ou de le toucher.', time: 120, isHard: false },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, soutiens mordicus qu’on est un autre jour de la semaine avec un sérieux de marbre.', time: 90, isHard: false },
-            { cat: '🔥 HARD : Amis', text: 'Pendant 2 minutes, tu dois répéter le dernier mot prononcé par la personne qui vient de parler avant de dire ta phrase.', time: 120, isHard: true },
-            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, prends un accent très prononcé (ex: chantant ou théâtral).', time: 90, isHard: false }
+            { id: 'p1', cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, commence absolument toutes tes phrases par "À mon humble avis...".', time: 90, isHard: false },
+            { id: 'p2', cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, chaque fois que quelqu’un pose une question, réponds par une autre question.', time: 120, isHard: false },
+            { id: 'p3_hard', cat: '🔥 HARD : Amis', text: 'Pendant 3 minutes, interdis-toi de sourire ou de rire, peu importe ce qu’on raconte.', time: 180, isHard: true },
+            { id: 'p4', cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, adopte une position de penseur (main sur le menton) en opinant à tout ce qu’on dit.', time: 90, isHard: false },
+            { id: 'p5_hard', cat: '🔥 HARD : Amis', text: 'Pendant 2 minutes, parle uniquement en chuchotant de façon ultra-intrigante.', time: 120, isHard: true },
+            { id: 'p6', cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, fais semblant d’avoir un tic nerveux à l’œil gauche.', time: 90, isHard: false },
+            { id: 'p7', cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, glisse le mot "Cactus" dans la discussion sans que ça paraisse suspect.', time: 120, isHard: false },
+            { id: 'p8_hard', cat: '🔥 HARD : Amis', text: 'Pendant 3 minutes, tu dois te lever et changer de place dès qu’un joueur prononce une voyelle précise (ex: la lettre A).', time: 180, isHard: true },
+            { id: 'p9', cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, pose ton téléphone face contre table et interdis-toi de le regarder ou de le toucher.', time: 120, isHard: false },
+            { id: 'p10', cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, soutiens mordicus qu’on est un autre jour de la semaine avec un sérieux de marbre.', time: 90, isHard: false },
+            { id: 'p11_hard', cat: '🔥 HARD : Amis', text: 'Pendant 2 minutes, tu dois répéter le dernier mot prononcé par la personne qui vient de parler avant de dire ta phrase.', time: 120, isHard: true },
+            { id: 'p12', cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, prends un accent très prononcé (ex: chantant ou théâtral).', time: 90, isHard: false }
         ];
     </script>
 </body>
