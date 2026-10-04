@@ -47,7 +47,7 @@
                     <label class="block text-xs uppercase text-gray-400 mb-1">Mode de jeu (Si tu crées le salon)</label>
                     <div class="grid grid-cols-2 gap-2">
                         <button type="button" onclick="setGameMode('table')" id="btn-mode-table" class="bg-red-600 border border-red-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">🍽️ À Table</button>
-                        <button type="button" onclick="setGameMode('party')" id="btn-mode-party" class="bg-gray-800 border border-gray-700 text-gray-400 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">🎉 Soirée / Apéro</button>
+                        <button type="button" onclick="setGameMode('party')" id="btn-mode-party" class="bg-gray-800 border border-gray-700 text-gray-400 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">☕ Pause Entre Amis</button>
                     </div>
                 </div>
 
@@ -135,7 +135,7 @@
 
             <!-- NOTIFICATION CIBLE ATTRAPÉE -->
             <div id="target-notification" class="hidden mb-4 bg-red-900/90 border-2 border-yellow-400 text-yellow-200 p-3 rounded-xl text-center font-bold text-sm animate-bounce shadow-xl">
-                ⚠️ <span id="notification-text">Quelqu'un a deviné votre objectif !</span>
+                ⚠️️ <span id="notification-text">Quelqu'un a deviné votre objectif !</span>
             </div>
 
             <!-- CONTENEUR ROUE -->
@@ -319,6 +319,8 @@
             });
 
             peer.on('connection', (conn) => {
+                if (!connections.includes(conn)) connections.push(conn);
+                
                 conn.on('data', (data) => {
                     handleHostIncomingData(conn, data);
                 });
@@ -434,7 +436,7 @@
                         randomBuzzerTimer = null;
                     }
                     broadcastBuzzerState(false);
-                    connections.forEach(c => c.send({ type: 'BUZZ_WINNER', winnerId: conn.peer }));
+                    connections.forEach(c => { if(c.open) c.send({ type: 'BUZZ_WINNER', winnerId: conn.peer }); });
                     handleBuzzWinner(conn.peer);
                 }
             }
@@ -461,7 +463,6 @@
             let isCorrect = matchingKeywordsCount >= 1 || (cleanedGuess.length > 5 && actualText.includes(cleanedGuess));
 
             if (isCorrect) {
-                // Bonne accusation précise !
                 gameData.consecutiveFails = 0;
                 accuser.score += 100; 
                 target.score -= 50;  
@@ -477,23 +478,22 @@
                 broadcastGameState();
 
                 connections.forEach(c => {
-                    if (c.peer === target.id) {
+                    if (c.open && c.peer === target.id) {
                         c.send({ type: 'NOTIFIED', msg: target.notification });
                     }
                 });
             } else {
-                // Mauvaise accusation (pas assez précis) -> La cible NE perd PAS son chrono, il continue !
                 accuser.score -= 25; 
                 gameData.consecutiveFails++;
 
                 if (gameData.consecutiveFails >= 3) {
                     gameData.buzzerBlockedUntil = Date.now() + 90000;
                     gameData.consecutiveFails = 0;
-                    connections.forEach(c => c.send({ type: 'GLOBAL_BUZZ_PENALTY', duration: 90000 }));
+                    connections.forEach(c => { if(c.open) c.send({ type: 'GLOBAL_BUZZ_PENALTY', duration: 90000 }); });
                     applyGlobalBuzzerPenalty(90000);
                 } else {
                     connections.forEach(c => {
-                        if (c.peer === accuserPeerId) {
+                        if (c.open && c.peer === accuserPeerId) {
                             c.send({ type: 'BUZZ_PENALTY', duration: 30000 });
                         }
                     });
@@ -509,7 +509,9 @@
         function broadcastGameState() {
             updateScreen();
             connections.forEach(conn => {
-                conn.send({ type: 'STATE_UPDATE', state: gameData });
+                if (conn.open) {
+                    conn.send({ type: 'STATE_UPDATE', state: gameData });
+                }
             });
         }
 
@@ -560,7 +562,9 @@
             buzzerActive = active;
             updateBuzzerUI(active);
             connections.forEach(conn => {
-                conn.send({ type: 'BUZZER_STATE', active: active });
+                if (conn.open) {
+                    conn.send({ type: 'BUZZER_STATE', active: active });
+                }
             });
         }
 
@@ -678,7 +682,9 @@
             } else {
                 buzzerActive = false;
                 updateBuzzerUI(false);
-                hostConnection.send({ type: 'BUZZ' });
+                if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'BUZZ' });
+                }
             }
         }
 
@@ -722,7 +728,9 @@
             if (myRole === 'host') {
                 processAccusation(myId, targetId, guessText);
             } else {
-                hostConnection.send({ type: 'ACCUSE', targetId: targetId, guessText: guessText });
+                if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'ACCUSE', targetId: targetId, guessText: guessText });
+                }
             }
         }
 
@@ -812,7 +820,9 @@
                 broadcastGameState();
             } else {
                 playSoundSpin();
-                hostConnection.send({ type: 'SPIN' });
+                if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'SPIN' });
+                }
             }
         }
 
@@ -826,7 +836,9 @@
                 broadcastGameState();
                 startLocalTimer();
             } else {
-                hostConnection.send({ type: 'START_TIMER' });
+                if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'START_TIMER' });
+                }
                 me.timerStarted = true;
                 startLocalTimer();
             }
@@ -857,7 +869,9 @@
                 broadcastGameState();
             } else {
                 if (success) playSoundSuccess(); else playSoundFail();
-                hostConnection.send({ type: 'VALIDATE', success: success });
+                if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'VALIDATE', success: success });
+                }
             }
         }
 
@@ -875,7 +889,7 @@
 
             if (gameData.phase === 'lobby') {
                 document.getElementById('display-room-code').innerText = roomCode;
-                document.getElementById('display-room-mode').innerText = gameData.mode === 'table' ? 'Mode : 🍽️ À Table' : 'Mode : 🎉 Soirée / Apéro';
+                document.getElementById('display-room-mode').innerText = gameData.mode === 'table' ? 'Mode : 🍽️ À Table' : 'Mode : ☕ Pause Entre Amis';
                 document.getElementById('player-count').innerText = gameData.players.length;
                 
                 document.getElementById('players-list').innerHTML = gameData.players.map(p => `
@@ -887,7 +901,7 @@
                                 <div class="text-[10px] text-gray-400 italic">${p.title || 'Le/La Soiffard(e)'}</div>
                             </div>
                         </div>
-                        ${p.id === gameData.players[0].id ? '<span class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded">Hôte</span>' : ''}
+                        ${gameData.players.length > 0 && p.id === gameData.players[0].id ? '<span class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded">Hôte</span>' : ''}
                     </li>
                 `).join('');
 
@@ -931,7 +945,6 @@
                     }
                 }
 
-                // Affichage uniquement de son propre profil/score secret pour ne pas spoiler les autres
                 if (me) {
                     let badge = '';
                     if (me.status === 'waiting') badge = '<span class="text-xs text-yellow-400">Prêt 🎡</span>';
@@ -989,12 +1002,12 @@
         const challengesTable = [
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90 },
+            { cat: '🍽️️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, interdis-toi de poser tes coudes sur la table en adoptant une posture ultra-rigide.', time: 90 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, donne un surnom affectueux (ex: "Mon p’tit chou") à chaque fois que tu t’adresses au joueur à ta gauche.', time: 120 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120 },
+            { cat: '🍽️️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 60 secondes, prends une voix de majordome obséquieux pour répondre à ton voisin d’en face.', time: 60 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ton couvert bien à l’horizontale après chaque bouchée.', time: 90 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, demande l’avis du joueur à ta droite sur absolument TOUT ce que tu manges ou bois.', time: 120 },
@@ -1002,18 +1015,18 @@
         ];
 
         const challengesParty = [
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, finis obligatoirement toutes tes phrases par "C\'est la vie de mon chat".', time: 90 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, chaque fois que quelqu’un rit, tu dois applaudir discrètement avec enthousiasme.', time: 120 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 60 secondes, parle uniquement en chuchotant de grands secrets.', time: 60 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, réponds à chaque question par un miaulement ou un son d’animal discret.', time: 90 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, interdis-toi de croiser les bras ou de toucher ton visage.', time: 120 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, prends une voix de robot en panne.', time: 90 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, insère le mot "Patate" au milieu de tes phrases sans que ça ne paraisse bizarre.', time: 120 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, adopte une posture ultra-détendue les mains derrière la tête.', time: 90 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, pose ton téléphone face contre table et interdis-toi de le regarder ou de le toucher.', time: 120 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, soutiens mordicus qu’on est un autre jour de la semaine avec un sérieux de marbre.', time: 90 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, fais mine de traduire tout ce que dit ton voisin en langage imaginaire.', time: 120 },
-            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, prends un accent québécois ou belge très prononcé.', time: 90 }
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, commence absolument toutes tes phrases par "À mon humble avis...".', time: 90 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, chaque fois que quelqu’un pose une question, réponds par une autre question.', time: 120 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 60 secondes, parle en chuchotant de façon dramatique comme si un secret d’État était en jeu.', time: 60 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, adopte une position de penseur (main sur le menton) en opinant à tout ce qu’on dit.', time: 90 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, interdis-toi de croiser les bras ou de toucher ton visage.', time: 120 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, fais semblant d’avoir un tic nerveux à l’œil gauche.', time: 90 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, glisse le mot "Cactus" dans la discussion sans que ça paraisse suspect.', time: 120 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, adopte une posture ultra-détendue les mains derrière la tête.', time: 90 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, pose ton téléphone face contre table et interdis-toi de le regarder ou de le toucher.', time: 120 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, soutiens mordicus qu’on est un autre jour de la semaine avec un sérieux de marbre.', time: 90 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 2 minutes, fais mine de traduire tout ce que dit ton voisin en langage imaginaire.', time: 120 },
+            { cat: '☕ Pause Entre Amis', text: 'Pendant 90 secondes, prends un accent très prononcé (ex: chantant ou théâtral).', time: 90 }
         ];
     </script>
 </body>
