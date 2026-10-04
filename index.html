@@ -17,8 +17,6 @@
         .glow-red { text-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
         .glow-box { box-shadow: 0 0 25px rgba(239, 68, 68, 0.3); }
         .glow-yellow { text-shadow: 0 0 20px rgba(234, 179, 8, 0.9); }
-        .choice-btn { transition: all 0.2s ease; }
-        .choice-btn.active { border-color: #ef4444; background-color: rgba(127, 29, 29, 0.4); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
         @keyframes pulse-fast {
             0%, 100% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.08); opacity: 0.85; }
@@ -68,97 +66,56 @@
             </div>
         </div>
 
-        <!-- ÉCRAN 2 : LOBBY & CRÉATION DE PERSONNAGE (IMMERSIVE) -->
-        <div id="screen-lobby" class="w-full bg-gray-900/90 border border-red-500/40 rounded-2xl p-6 glow-box backdrop-blur-md hidden text-center">
+        <!-- ÉCRAN 2 : LOBBY & CRÉATION DE PERSONNAGE -->
+        <div id="screen-lobby" class="w-full bg-gray-900/80 border border-red-500/30 rounded-2xl p-6 glow-box backdrop-blur-md hidden text-center">
             <h2 class="text-xs uppercase tracking-widest text-gray-400 mb-1">Code du Salon</h2>
-            <div id="display-room-code" class="text-5xl font-mono font-black text-red-500 tracking-widest mb-1">----</div>
+            <div id="display-room-code" class="text-5xl font-mono font-black text-red-500 tracking-widest mb-2">----</div>
             <div id="display-room-mode" class="inline-block bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-bold px-3 py-1 rounded-full mb-4">Mode : 🍽️ À Table</div>
 
-            <!-- APERÇU VISUEL GÉANT & ALÉATOIRE -->
-            <div class="bg-gray-800/90 border border-red-500/30 rounded-2xl p-4 mb-4 flex flex-col items-center shadow-inner relative overflow-hidden">
-                <div class="absolute top-2 right-2 flex space-x-1">
-                    <button type="button" onclick="randomizeCharacter()" class="bg-gray-900/80 hover:bg-gray-700 text-yellow-400 border border-gray-700 p-2 rounded-xl text-xs font-bold flex items-center space-x-1 cursor-pointer transition shadow" title="Générer un look aléatoire">
-                        <span>🎲 Aléatoire</span>
-                    </button>
-                </div>
-
-                <div class="relative group mt-2">
-                    <img id="my-avatar-preview" src="" alt="Avatar" class="w-32 h-32 rounded-3xl bg-gray-900 border-4 border-red-500/80 p-2 object-cover shadow-2xl glow-box">
-                </div>
-                <div class="mt-2 text-sm font-extrabold text-white" id="preview-pseudo-label">Ton Avatar</div>
-            </div>
-
-            <!-- ONGLETS DE PERSONNALISATION VISUELLE -->
-            <div class="bg-gray-800/80 border border-red-500/20 rounded-2xl p-4 mb-4 text-left space-y-4">
+            <div class="bg-gray-800/80 border border-red-500/20 rounded-xl p-4 mb-4 text-left">
+                <h3 class="text-xs uppercase font-bold text-red-400 mb-2">🎭 Ton Avatar & Style</h3>
                 
-                <!-- 1. Style de créature -->
-                <div>
-                    <label class="block text-[11px] uppercase font-bold text-gray-400 mb-1.5">1. Nature de l'avatar</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button type="button" onclick="selectAvatarStyle('avataaars', 'human')" id="style-human" class="choice-btn active bg-gray-900 border border-gray-700 p-2 rounded-xl text-center text-xs font-bold text-white cursor-pointer">👤 Humain</button>
-                        <button type="button" onclick="selectAvatarStyle('bottts', 'monster')" id="style-monster" class="choice-btn bg-gray-900 border border-gray-700 p-2 rounded-xl text-center text-xs font-bold text-white cursor-pointer">👹 Monstre</button>
-                        <button type="button" onclick="selectAvatarStyle('lorelei', 'cyborg')" id="style-cyborg" class="choice-btn bg-gray-900 border border-gray-700 p-2 rounded-xl text-center text-xs font-bold text-white cursor-pointer">🔮 Fantastique</button>
+                <div class="flex items-center space-x-4 mb-3">
+                    <img id="my-avatar-preview" src="" alt="Avatar" class="w-16 h-16 rounded-2xl bg-gray-900 border-2 border-red-500 p-1 object-cover">
+                    <div class="flex-1 space-y-2">
+                        <div>
+                            <label class="block text-[10px] uppercase text-gray-400 mb-1">Style graphique</label>
+                            <select id="select-avatar-style" onchange="changeAvatarStyle()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-red-500">
+                                <option value="bottts">Robots stylés (Bottts)</option>
+                                <option value="avataaars">Humains vectoriels (Avataaars)</option>
+                                <option value="micah">Dessins modernes (Micah)</option>
+                                <option value="lorelei">Portraits élégants (Lorelei)</option>
+                                <option value="adventurer">Aventuriers (Adventurer)</option>
+                            </select>
+                        </div>
+                        <button type="button" onclick="randomizeAvatar()" class="w-full bg-gray-900 hover:bg-gray-700 border border-gray-700 text-white font-bold py-1.5 rounded-lg text-xs transition cursor-pointer">🎲 Aléatoire</button>
                     </div>
                 </div>
 
-                <!-- 2. Teinte / Couleur de peau -->
                 <div>
-                    <label class="block text-[11px] uppercase font-bold text-gray-400 mb-1.5">2. Teinte / Peau / Énergie</label>
-                    <div class="grid grid-cols-6 gap-2">
-                        <button type="button" onclick="selectSkin('default')" id="skin-default" class="choice-btn active h-9 rounded-xl bg-amber-200 border-2 border-gray-700 cursor-pointer" title="Naturel"></button>
-                        <button type="button" onclick="selectSkin('red')" id="skin-red" class="choice-btn h-9 rounded-xl bg-red-600 border-2 border-gray-700 cursor-pointer" title="Rouge Infernal"></button>
-                        <button type="button" onclick="selectSkin('green')" id="skin-green" class="choice-btn h-9 rounded-xl bg-emerald-500 border-2 border-gray-700 cursor-pointer" title="Vert Monstre"></button>
-                        <button type="button" onclick="selectSkin('purple')" id="skin-purple" class="choice-btn h-9 rounded-xl bg-purple-600 border-2 border-gray-700 cursor-pointer" title="Violet Mystique"></button>
-                        <button type="button" onclick="selectSkin('blue')" id="skin-blue" class="choice-btn h-9 rounded-xl bg-blue-500 border-2 border-gray-700 cursor-pointer" title="Bleu Glacial"></button>
-                        <button type="button" onclick="selectSkin('dark')" id="skin-dark" class="choice-btn h-9 rounded-xl bg-gray-900 border-2 border-gray-700 cursor-pointer" title="Noir Obscur"></button>
-                    </div>
-                </div>
-
-                <!-- 3. Style Cheveux / Crinière -->
-                <div>
-                    <label class="block text-[11px] uppercase font-bold text-gray-400 mb-1.5">3. Style de Cheveux / Crinière</label>
-                    <div class="grid grid-cols-4 gap-2">
-                        <button type="button" onclick="selectHair('normal')" id="hair-normal" class="choice-btn active bg-gray-900 border border-gray-700 py-2 px-1 rounded-xl text-center text-[11px] font-bold text-white cursor-pointer">Classique</button>
-                        <button type="button" onclick="selectHair('long')" id="hair-long" class="choice-btn bg-gray-900 border border-gray-700 py-2 px-1 rounded-xl text-center text-[11px] font-bold text-white cursor-pointer">Longs</button>
-                        <button type="button" onclick="selectHair('wild')" id="hair-wild" class="choice-btn bg-gray-900 border border-gray-700 py-2 px-1 rounded-xl text-center text-[11px] font-bold text-white cursor-pointer">Sauvages</button>
-                        <button type="button" onclick="selectHair('bald')" id="hair-bald" class="choice-btn bg-gray-900 border border-gray-700 py-2 px-1 rounded-xl text-center text-[11px] font-bold text-white cursor-pointer">Chauve</button>
-                    </div>
-                </div>
-
-                <!-- 4. Regard / Yeux -->
-                <div>
-                    <label class="block text-[11px] uppercase font-bold text-gray-400 mb-1.5">4. Expression du regard</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button type="button" onclick="selectEye('normal')" id="eye-normal" class="choice-btn active bg-gray-900 border border-gray-700 py-2 px-1 rounded-xl text-center text-xs font-bold text-white cursor-pointer">👁️ Normal</button>
-                        <button type="button" onclick="selectEye('wink')" id="eye-wink" class="choice-btn bg-gray-900 border border-gray-700 py-2 px-1 rounded-xl text-center text-xs font-bold text-white cursor-pointer">😉 Clin d'œil</button>
-                        <button type="button" onclick="selectEye('squint')" id="eye-squint" class="choice-btn bg-gray-900 border border-gray-700 py-2 px-1 rounded-xl text-center text-xs font-bold text-white cursor-pointer">🤨 Perçant</button>
-                    </div>
-                </div>
-
-                <!-- 5. Surnom à table -->
-                <div>
-                    <label class="block text-[11px] uppercase font-bold text-gray-400 mb-1.5">5. Ton Titre / Surnom à table</label>
-                    <select id="select-title" onchange="updateMyProfile()" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 font-bold">
+                    <label class="block text-xs text-gray-400 mb-1">Ton Titre / Surnom</label>
+                    <select id="select-title" onchange="updateMyProfile()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
                         <option value="Le/La Soiffard(e)">Le / La Soiffard(e) 🍷</option>
                         <option value="La Reine de la nuit">La Reine de la nuit 👑</option>
                         <option value="Le Roi de l'apéro">Le Roi de l'apéro 🍻</option>
+                        <option value="Le/La Vainqueur(e) masqué(e)">Le / La Vainqueur(e) masqué(e) 🎭</option>
                         <option value="La Terreur des tables">La Terreur des tables 💀</option>
-                        <option value="Le Monstre des abysses">Le Monstre des abysses 🦑</option>
                         <option value="Le/La Gourmand(e)">Le / La Gourmand(e) 🍕</option>
+                        <option value="Le/La Stratège">Le / La Stratège 🃏</option>
                         <option value="L'Anarchiste">L'Anarchiste 🔥</option>
+                        <option value="Le Caméléon">Le Caméléon 🦎</option>
                         <option value="L'Imposteur(e)">L'Imposteur(e) 🕵️</option>
                     </select>
                 </div>
-
             </div>
 
-            <div class="bg-gray-800/60 rounded-2xl p-4 mb-4 border border-gray-700">
+            <div class="bg-gray-800/60 rounded-xl p-4 mb-4">
                 <h3 class="text-sm font-bold text-gray-300 mb-2">Joueurs connectés (<span id="player-count">0</span>)</h3>
                 <ul id="players-list" class="space-y-2 max-h-32 overflow-y-auto text-sm"></ul>
             </div>
 
             <div id="host-controls" class="hidden">
-                <button onclick="startParty()" class="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white font-extrabold py-3.5 rounded-xl transition shadow-lg shadow-red-600/40 text-base uppercase tracking-wider animate-pulse cursor-pointer">Lancer la Partie 🔥</button>
+                <button onclick="startParty()" class="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white font-extrabold py-3 rounded-xl transition shadow-lg shadow-red-600/40 text-base uppercase tracking-wider animate-pulse cursor-pointer">Lancer la Partie 🔥</button>
             </div>
             <div id="guest-waiting" class="text-gray-400 text-xs italic">En attente que l'hôte lance la partie...</div>
         </div>
@@ -303,13 +260,7 @@
         let pendingChallenge = null;
 
         let selectedGameMode = 'table'; 
-        
-        // Personnalisation complète du personnage
-        let avatarStyle = 'avataaars';
-        let creatureType = 'human';
-        let skinColor = 'default';
-        let hairStyle = 'normal';
-        let eyeStyle = 'normal';
+        let avatarStyle = 'bottts';
         let myAvatarSeed = 'player_' + Math.floor(Math.random() * 10000);
         let myAvatarUrl = '';
         let myTitle = 'Le/La Soiffard(e)';
@@ -327,112 +278,26 @@
             mode: 'table',
             consecutiveFails: 0,
             buzzerBlockedUntil: 0,
-            usedChallengeIds: []
+            usedChallengeIds: [] // Pour éviter de répéter les défis
         };
 
-        function selectAvatarStyle(style, type) {
-            avatarStyle = style;
-            creatureType = type;
-            
-            document.querySelectorAll('#style-human, #style-monster, #style-cyborg').forEach(btn => btn.classList.remove('active'));
-            if (type === 'human') document.getElementById('style-human').classList.add('active');
-            else if (type === 'monster') document.getElementById('style-monster').classList.add('active');
-            else if (type === 'cyborg') document.getElementById('style-cyborg').classList.add('active');
-
-            updateCharacterCustomization();
-        }
-
-        function selectSkin(color) {
-            skinColor = color;
-            document.querySelectorAll('[id^="skin-"]').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('skin-' + color).classList.add('active');
-            updateCharacterCustomization();
-        }
-
-        function selectHair(style) {
-            hairStyle = style;
-            document.querySelectorAll('[id^="hair-"]').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('hair-' + style).classList.add('active');
-            updateCharacterCustomization();
-        }
-
-        function selectEye(style) {
-            eyeStyle = style;
-            document.querySelectorAll('[id^="eye-"]').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('eye-' + style).classList.add('active');
-            updateCharacterCustomization();
-        }
-
-        function updateCharacterCustomization() {
+        function changeAvatarStyle() {
+            const select = document.getElementById('select-avatar-style');
+            avatarStyle = select.value;
             updateAvatarPreview();
             updateMyProfile();
         }
 
-        function randomizeCharacter() {
-            const styles = [
-                { style: 'avataaars', type: 'human' },
-                { style: 'bottts', type: 'monster' },
-                { style: 'lorelei', type: 'cyborg' },
-                { style: 'micah', type: 'human' }
-            ];
-            const skins = ['default', 'red', 'green', 'purple', 'blue', 'dark'];
-            const hairs = ['normal', 'long', 'wild', 'bald'];
-            const eyes = ['normal', 'wink', 'squint'];
-
-            const chosenStyleObj = styles[Math.floor(Math.random() * styles.length)];
-            avatarStyle = chosenStyleObj.style;
-            creatureType = chosenStyleObj.type;
-            skinColor = skins[Math.floor(Math.random() * skins.length)];
-            hairStyle = hairs[Math.floor(Math.random() * hairs.length)];
-            eyeStyle = eyes[Math.floor(Math.random() * eyes.length)];
+        function randomizeAvatar() {
             myAvatarSeed = 'seed_' + Math.random().toString(36).substring(7);
-
-            document.querySelectorAll('#style-human, #style-monster, #style-cyborg').forEach(b => b.classList.remove('active'));
-            if (creatureType === 'human') document.getElementById('style-human').classList.add('active');
-            else if (creatureType === 'monster') document.getElementById('style-monster').classList.add('active');
-            else document.getElementById('style-cyborg').classList.add('active');
-
-            document.querySelectorAll('[id^="skin-"]').forEach(b => b.classList.remove('active'));
-            document.getElementById('skin-' + skinColor).classList.add('active');
-
-            document.querySelectorAll('[id^="hair-"]').forEach(b => b.classList.remove('active'));
-            document.getElementById('hair-' + hairStyle).classList.add('active');
-
-            document.querySelectorAll('[id^="eye-"]').forEach(b => b.classList.remove('active'));
-            document.getElementById('eye-' + eyeStyle).classList.add('active');
-
             updateAvatarPreview();
             updateMyProfile();
         }
 
         function updateAvatarPreview() {
-            let queryParams = `seed=${myAvatarSeed}`;
-            
-            if (skinColor === 'red') queryParams += `&backgroundColor=7f1d1d&skinColor=ff4d4d`;
-            else if (skinColor === 'green') queryParams += `&backgroundColor=064e3b&skinColor=4ade80`;
-            else if (skinColor === 'purple') queryParams += `&backgroundColor=581c87&skinColor=c084fc`;
-            else if (skinColor === 'blue') queryParams += `&backgroundColor=1e3a8a&skinColor=60a5fa`;
-            else if (skinColor === 'dark') queryParams += `&backgroundColor=111827&skinColor=374151`;
-
-            if (creatureType === 'monster' && avatarStyle === 'bottts') {
-                queryParams += `&primaryColor=ef4444&eyes=bulging,robocorp`;
-            } else if (creatureType === 'cyborg') {
-                queryParams += `&glasses=variant02&accessoriesProbability=100`;
-            }
-
-            if (hairStyle === 'bald') queryParams += `&top=noHair`;
-            else if (hairStyle === 'long') queryParams += `&top=longHair,straightDan`;
-            else if (hairStyle === 'wild') queryParams += `&top=dreadlocks,shaggyMullet`;
-
-            if (eyeStyle === 'wink') queryParams += `&eyes=wink,happy`;
-            else if (eyeStyle === 'squint') queryParams += `&eyes=squint,surprised`;
-
-            myAvatarUrl = `https://api.dicebear.com/7.x/${avatarStyle}/svg?${queryParams}`;
+            myAvatarUrl = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${myAvatarSeed}`;
             const preview = document.getElementById('my-avatar-preview');
             if (preview) preview.src = myAvatarUrl;
-            
-            const label = document.getElementById('preview-pseudo-label');
-            if (label && myPseudo) label.innerText = myPseudo;
         }
 
         function setGameMode(mode) {
@@ -546,6 +411,7 @@
             const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
             let available = pool.filter(c => !gameData.usedChallengeIds.includes(c.id) && (isHardOnly ? c.isHard : true));
             
+            // Si tout a été épuisé, on réinitialise la mémoire des défis
             if (available.length === 0) {
                 gameData.usedChallengeIds = [];
                 available = pool.filter(c => (isHardOnly ? c.isHard : true));
@@ -628,6 +494,7 @@
                         const ptsToAdd = player.currentChallenge.isHard ? 4 : 2;
                         player.score += ptsToAdd;
                     } else {
+                        // Échec ou abandon : -2 pts si hard, 0 pt si normal
                         const ptsToSubtract = player.currentChallenge.isHard ? 2 : 0;
                         player.score -= ptsToSubtract;
                     }
@@ -687,8 +554,8 @@
 
             if (isCorrect) {
                 gameData.consecutiveFails = 0;
-                accuser.score += 1;
-                target.score -= 1;
+                accuser.score += 1; // Tu surprends qqn = 1 point
+                target.score -= 1;  // Tu te fais prendre = -1 point
                 target.currentChallenge = null;
                 target.timeLeft = 0;
                 target.maxTime = 0;
@@ -706,7 +573,7 @@
                     }
                 });
             } else {
-                accuser.score -= 1;
+                accuser.score -= 1; // Fausse accusation = pénalité de -1 point
                 gameData.consecutiveFails++;
 
                 if (gameData.consecutiveFails >= 3) {
@@ -1277,14 +1144,14 @@
         updateAvatarPreview();
 
         const challengesTable = [
-            { id: 't1', cat: '🍽 Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90, isHard: false },
+            { id: 't1', cat: '🍽️️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90, isHard: false },
             { id: 't2', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120, isHard: false },
-            { id: 't3', cat: '🍽 Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90, isHard: false },
+            { id: 't3', cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90, isHard: false },
             { id: 't4_hard', cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de dire "oui", "non", "je", et "tu" sous peine de perdre gros.', time: 180, isHard: true },
             { id: 't5', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120, isHard: false },
             { id: 't6_hard', cat: '🔥 HARD : Table', text: 'Pendant 2 minutes, mange absolument tout ce que tu portes à ta bouche avec tes mains uniquement (interdiction d’utiliser les couverts).', time: 120, isHard: true },
             { id: 't7', cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90, isHard: false },
-            { id: 't8', cat: '🍽 Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120, isHard: false },
+            { id: 't8', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120, isHard: false },
             { id: 't9_hard', cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de toucher ton verre toi-même : tu dois supplier quelqu’un d’autre de te faire boire.', time: 180, isHard: true },
             { id: 't10', cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ton couvert bien à l’horizontale après chaque bouchée.', time: 90, isHard: false },
             { id: 't11', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, demande l’avis du joueur à ta droite sur absolument TOUT ce que tu manges ou bois.', time: 120, isHard: false },
