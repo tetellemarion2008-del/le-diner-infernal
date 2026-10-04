@@ -93,7 +93,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">Ton Titre / Surnom (Mixte)</label>
+                    <label class="block text-xs text-gray-400 mb-1">Ton Titre / Surnom</label>
                     <select id="select-title" onchange="updateMyProfile()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
                         <option value="Le/La Soiffard(e)">Le / La Soiffard(e) 🍷</option>
                         <option value="La Reine de la nuit">La Reine de la nuit 👑</option>
@@ -131,6 +131,11 @@
                     <span class="text-xs text-gray-400 uppercase">Manche</span>
                     <p id="round-counter" class="text-sm font-bold text-white">1 / 5</p>
                 </div>
+            </div>
+
+            <!-- NOTIFICATION CIBLE ATTRAPÉE -->
+            <div id="target-notification" class="hidden mb-4 bg-red-900/90 border-2 border-yellow-400 text-yellow-200 p-3 rounded-xl text-center font-bold text-sm animate-bounce shadow-xl">
+                ⚠️ <span id="notification-text">Quelqu'un a deviné votre objectif !</span>
             </div>
 
             <!-- CONTENEUR ROUE -->
@@ -185,8 +190,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] text-yellow-300 uppercase mb-1">2. Quelle est sa consigne / son objectif secret ?</label>
-                        <input type="text" id="input-guess-text" placeholder="Ex: Il ne doit pas utiliser sa main droite..." class="w-full bg-gray-900 border border-yellow-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+                        <label class="block text-[10px] text-yellow-300 uppercase mb-1">2. Précise son objectif secret (mots-clés requis)</label>
+                        <input type="text" id="input-guess-text" placeholder="Ex: main gauche, coudes, mot oui..." class="w-full bg-gray-900 border border-yellow-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
                     </div>
                     <button onclick="confirmAccusation()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold py-2.5 rounded-xl transition text-xs cursor-pointer shadow-lg uppercase">Valider mon accusation 🚨</button>
                 </div>
@@ -233,9 +238,9 @@
         let myTitle = 'Le/La Soiffard(e)';
         
         let buzzerActive = false;
-        let buzzerBlockedUntil = 0; // Timestamp de fin de blocage (individuel ou collectif de 1min30)
+        let buzzerBlockedUntil = 0; 
         let buzzerBlockInterval = null;
-        let consecutiveFails = 0; // Compteur d'échecs consécutifs au buzzer
+        let consecutiveFails = 0; 
 
         let gameData = {
             players: [], 
@@ -307,7 +312,7 @@
 
             peer.on('open', (id) => {
                 myId = id;
-                gameData.players = [{ id: myId, name: myPseudo, avatarUrl: myAvatarUrl, title: myTitle, score: 0, status: 'waiting', currentChallenge: null, timeLeft: 0, maxTime: 0, timerStarted: false }];
+                gameData.players = [{ id: myId, name: myPseudo, avatarUrl: myAvatarUrl, title: myTitle, score: 0, status: 'waiting', currentChallenge: null, timeLeft: 0, maxTime: 0, timerStarted: false, notification: null }];
                 gameData.phase = 'lobby';
                 updateScreen();
             });
@@ -367,7 +372,8 @@
                         currentChallenge: null, 
                         timeLeft: 0, 
                         maxTime: 0, 
-                        timerStarted: false 
+                        timerStarted: false,
+                        notification: null
                     });
                 }
                 broadcastGameState();
@@ -390,6 +396,7 @@
                     player.maxTime = randomChallenge.time;
                     player.timerStarted = false;
                     player.status = 'playing';
+                    player.notification = null;
                     manageRandomBuzzer();
                     broadcastGameState();
                 }
@@ -413,6 +420,7 @@
                     player.maxTime = 0;
                     player.timerStarted = false;
                     player.status = 'waiting'; 
+                    player.notification = null;
                     manageRandomBuzzer();
                     broadcastGameState();
                 }
@@ -430,45 +438,75 @@
                 }
             }
             else if (data.type === 'ACCUSE') {
-                const accuser = gameData.players.find(p => p.id === conn.peer);
-                const target = gameData.players.find(p => p.id === data.targetId);
+                processAccusation(conn.peer, data.targetId, data.guessText);
+            }
+        }
 
-                const guessedText = (data.guessText || "").toLowerCase().trim();
-                const actualText = (target && target.currentChallenge) ? target.currentChallenge.text.toLowerCase() : "";
+        function processAccusation(accuserPeerId, targetId, guessText) {
+            const accuser = gameData.players.find(p => p.id === accuserPeerId);
+            const target = gameData.players.find(p => p.id === targetId);
+
+            if (!accuser || !target || target.status !== 'playing') return;
+
+            const actualText = target.currentChallenge.text.toLowerCase();
+            const cleanedGuess = (guessText || "").toLowerCase().trim();
+            
+            // Extraction de mots significatifs de la consigne (on enlève les mots de liaison de moins de 4 lettres)
+            const stopWords = ['de', 'la', 'le', 'les', 'des', 'un', 'une', 'et', 'en', 'à', 'aux', 'sur', 'par', 'que', 'qui', 'pas', 'ne'];
+            const actualKeywords = actualText.split(/[\s,.-]+/).filter(w => w.length > 3 && !stopWords.includes(w));
+            
+            // Vérification précise : le joueur doit citer au moins un mot-clé fort ou une expression précise de l'objectif
+            const guessWords = cleanedGuess.split(/[\s,.-]+/).filter(w => w.length > 2);
+            let matchingKeywordsCount = actualKeywords.filter(kw => guessWords.some(gw => kw.includes(gw) || gw.includes(kw))).length;
+            
+            // Condition de validation précise stricte
+            let isCorrect = matchingKeywordsCount >= 1 || (cleanedGuess.length > 5 && actualText.includes(cleanedGuess));
+
+            if (isCorrect) {
+                // Bonne accusation précise !
+                gameData.consecutiveFails = 0;
+                accuser.score += 100; 
+                target.score -= 50;  
+                target.currentChallenge = null;
+                target.timeLeft = 0;
+                target.maxTime = 0;
+                target.timerStarted = false;
+                target.status = 'waiting'; 
                 
-                const keywords = guessedText.split(' ').filter(w => w.length > 3);
-                let matchCount = keywords.filter(w => actualText.includes(w)).length;
-                let isCorrect = matchCount >= 1 || (guessedText.length > 5 && actualText.includes(guessedText.substring(0, 5)));
+                // Notifier la cible précisément
+                target.notification = `${accuser.name} a deviné votre objectif !`;
 
-                if (accuser && target && target.status === 'playing' && isCorrect) {
-                    // Bonne accusation : on réinitialise les échecs consécutifs
-                    gameData.consecutiveFails = 0;
-                    accuser.score += 100; 
-                    target.score -= 50;  
-                    target.currentChallenge = null;
-                    target.timeLeft = 0;
-                    target.maxTime = 0;
-                    target.timerStarted = false;
-                    target.status = 'waiting'; 
-                    manageRandomBuzzer();
-                    broadcastGameState();
-                } else {
-                    // Mauvaise accusation : échec !
-                    accuser.score -= 25; 
-                    gameData.consecutiveFails++;
+                manageRandomBuzzer();
+                broadcastGameState();
 
-                    if (gameData.consecutiveFails >= 3) {
-                        // 3 échecs consécutifs => Blocage total de 1 min 30 (90000 ms) pour tout le monde
-                        gameData.buzzerBlockedUntil = Date.now() + 90000;
-                        gameData.consecutiveFails = 0;
-                        connections.forEach(c => c.send({ type: 'GLOBAL_BUZZ_PENALTY', duration: 90000 }));
-                        applyGlobalBuzzerPenalty(90000);
-                    } else {
-                        conn.send({ type: 'BUZZ_PENALTY', duration: 30000 });
+                // Envoyer un ordre spécial si le cible est un client distant
+                connections.forEach(c => {
+                    if (c.peer === target.id) {
+                        c.send({ type: 'NOTIFIED', msg: target.notification });
                     }
-                    manageRandomBuzzer();
-                    broadcastGameState();
+                });
+            } else {
+                // Mauvaise accusation (pas assez précis)
+                accuser.score -= 25; 
+                gameData.consecutiveFails++;
+
+                if (gameData.consecutiveFails >= 3) {
+                    gameData.buzzerBlockedUntil = Date.now() + 90000; // 1 min 30
+                    gameData.consecutiveFails = 0;
+                    connections.forEach(c => c.send({ type: 'GLOBAL_BUZZ_PENALTY', duration: 90000 }));
+                    applyGlobalBuzzerPenalty(90000);
+                } else {
+                    connections.forEach(c => {
+                        if (c.peer === accuserPeerId) {
+                            c.send({ type: 'BUZZ_PENALTY', duration: 30000 });
+                        }
+                    });
+                    if (accuserPeerId === myId) {
+                        applyBuzzerPenalty(30000);
+                    }
                 }
+                manageRandomBuzzer();
+                broadcastGameState();
             }
         }
 
@@ -486,7 +524,6 @@
                 return;
             }
 
-            // Si le buzzer global est bloqué (par ex 1min30), on ne fait rien
             if (Date.now() < gameData.buzzerBlockedUntil) {
                 return;
             }
@@ -545,6 +582,21 @@
                 applyBuzzerPenalty(data.duration);
             } else if (data.type === 'GLOBAL_BUZZ_PENALTY') {
                 applyGlobalBuzzerPenalty(data.duration);
+            } else if (data.type === 'NOTIFIED') {
+                showNotification(data.msg);
+            }
+        }
+
+        function showNotification(msg) {
+            playSoundFail();
+            const notif = document.getElementById('target-notification');
+            const notifText = document.getElementById('notification-text');
+            if (notif && notifText) {
+                notifText.innerText = msg;
+                notif.classList.remove('hidden');
+                setTimeout(() => {
+                    notif.classList.add('hidden');
+                }, 6000);
             }
         }
 
@@ -594,7 +646,7 @@
             const personalBlocked = Date.now() < buzzerBlockedUntil;
 
             if (globalBlocked || personalBlocked) {
-                return; // En cours de blocage
+                return; 
             }
 
             if (active) {
@@ -664,7 +716,7 @@
                 return;
             }
             if (!guessText) {
-                alert("Donne ton idée de son objectif secret !");
+                alert("Donne des mots-clés précis de son objectif secret !");
                 return;
             }
 
@@ -672,43 +724,7 @@
             document.getElementById('input-guess-text').value = '';
 
             if (myRole === 'host') {
-                const accuser = gameData.players.find(p => p.id === myId);
-                const target = gameData.players.find(p => p.id === targetId);
-
-                const actualText = (target && target.currentChallenge) ? target.currentChallenge.text.toLowerCase() : "";
-                const guessedText = guessText.toLowerCase();
-                const keywords = guessedText.split(' ').filter(w => w.length > 3);
-                let matchCount = keywords.filter(w => actualText.includes(w)).length;
-                let isCorrect = matchCount >= 1 || (guessedText.length > 5 && actualText.includes(guessedText.substring(0, 5)));
-
-                if (accuser && target && target.status === 'playing' && isCorrect) {
-                    playSoundSuccess();
-                    gameData.consecutiveFails = 0;
-                    accuser.score += 100;
-                    target.score -= 50;
-                    target.currentChallenge = null;
-                    target.timeLeft = 0;
-                    target.maxTime = 0;
-                    target.timerStarted = false;
-                    target.status = 'waiting';
-                    manageRandomBuzzer();
-                    broadcastGameState();
-                } else {
-                    playSoundFail();
-                    accuser.score -= 25;
-                    gameData.consecutiveFails++;
-
-                    if (gameData.consecutiveFails >= 3) {
-                        gameData.buzzerBlockedUntil = Date.now() + 90000;
-                        gameData.consecutiveFails = 0;
-                        connections.forEach(c => c.send({ type: 'GLOBAL_BUZZ_PENALTY', duration: 90000 }));
-                        applyGlobalBuzzerPenalty(90000);
-                    } else {
-                        applyBuzzerPenalty(30000);
-                    }
-                    manageRandomBuzzer();
-                    broadcastGameState();
-                }
+                processAccusation(myId, targetId, guessText);
             } else {
                 hostConnection.send({ type: 'ACCUSE', targetId: targetId, guessText: guessText });
             }
@@ -726,6 +742,7 @@
                 p.timeLeft = 0;
                 p.maxTime = 0;
                 p.timerStarted = false;
+                p.notification = null;
             });
             manageRandomBuzzer();
             broadcastGameState();
@@ -794,6 +811,7 @@
                 me.maxTime = randomChallenge.time;
                 me.timerStarted = false;
                 me.status = 'playing';
+                me.notification = null;
                 manageRandomBuzzer();
                 broadcastGameState();
             } else {
@@ -838,6 +856,7 @@
                 me.maxTime = 0;
                 me.timerStarted = false;
                 me.status = 'waiting'; 
+                me.notification = null;
                 manageRandomBuzzer();
                 broadcastGameState();
             } else {
@@ -885,6 +904,16 @@
                 const status = me ? me.status : 'waiting';
 
                 document.getElementById('round-counter').innerText = `${gameData.round} / ${gameData.maxRounds}`;
+
+                // Afficher la notification si présente
+                const notif = document.getElementById('target-notification');
+                const notifText = document.getElementById('notification-text');
+                if (me && me.notification) {
+                    notifText.innerText = me.notification;
+                    notif.classList.remove('hidden');
+                } else {
+                    notif.classList.add('hidden');
+                }
 
                 const hasActiveChallenge = (status === 'playing' && me.currentChallenge !== null);
                 document.getElementById('wheel-container').classList.toggle('hidden', hasActiveChallenge);
@@ -965,7 +994,7 @@
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90 },
-            { cat: '🍽 Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, interdis-toi de poser tes coudes sur la table en adoptant une posture ultra-rigide.', time: 90 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, donne un surnom affectueux (ex: "Mon p’tit chou") à chaque fois que tu t’adresses au joueur à ta gauche.', time: 120 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90 },
