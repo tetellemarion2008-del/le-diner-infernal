@@ -16,6 +16,12 @@
         body { font-family: 'Outfit', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
         .glow-red { text-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
         .glow-box { box-shadow: 0 0 25px rgba(239, 68, 68, 0.3); }
+        .glow-yellow { text-shadow: 0 0 20px rgba(234, 179, 8, 0.9); }
+        @keyframes pulse-fast {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.85; }
+        }
+        .animate-buzzer { animation: pulse-fast 0.6s infinite; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
 </head>
@@ -23,7 +29,7 @@
 
     <header class="w-full max-w-md text-center py-4">
         <h1 class="text-4xl font-900 tracking-wider text-red-500 uppercase glow-red">🔥 Le Dîner Infernal 🔥</h1>
-        <p id="mode-subtitle" class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Choisis ton mode de jeu</p>
+        <p id="mode-subtitle" class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Défis & Trahisons en Multijoueur</p>
     </header>
 
     <main id="app" class="w-full max-w-md flex-1 flex flex-col justify-center items-center">
@@ -34,12 +40,12 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs uppercase text-gray-400 mb-1">Ton Pseudo</label>
-                    <input type="text" id="input-pseudo" placeholder="Ex: Michou..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 font-semibold" maxlength="15">
+                    <input type="text" id="input-pseudo" placeholder="Ex: Alex, Sarah..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 font-semibold" maxlength="15">
                 </div>
 
                 <!-- SÉLECTEUR DE MODE DE JEU POUR L'HÔTE -->
                 <div>
-                    <label class="block text-xs uppercase text-gray-400 mb-1">Mode de jeu (Si tu créé le salon)</label>
+                    <label class="block text-xs uppercase text-gray-400 mb-1">Mode de jeu (Si tu crées le salon)</label>
                     <div class="grid grid-cols-2 gap-2">
                         <button type="button" onclick="setGameMode('table')" id="btn-mode-table" class="bg-red-600 border border-red-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">🍽️ À Table</button>
                         <button type="button" onclick="setGameMode('party')" id="btn-mode-party" class="bg-gray-800 border border-gray-700 text-gray-400 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">🎉 Soirée / Apéro</button>
@@ -67,35 +73,47 @@
             <div id="display-room-code" class="text-5xl font-mono font-black text-red-500 tracking-widest mb-2">----</div>
             <div id="display-room-mode" class="inline-block bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-bold px-3 py-1 rounded-full mb-4">Mode : 🍽️ À Table</div>
 
-            <!-- CUSTOMISATION DU PERSO AVEC AVATAR VECTORIEL DICEBEAR -->
+            <!-- CUSTOMISATION DU PERSO AVEC AVATARS VECTORIELS PERSONNALISABLES -->
             <div class="bg-gray-800/80 border border-red-500/20 rounded-xl p-4 mb-4 text-left">
-                <h3 class="text-xs uppercase font-bold text-red-400 mb-2">🎭 Ton Personnage</h3>
+                <h3 class="text-xs uppercase font-bold text-red-400 mb-2">🎭 Ton Avatar & Style</h3>
                 
                 <div class="flex items-center space-x-4 mb-3">
                     <img id="my-avatar-preview" src="" alt="Avatar" class="w-16 h-16 rounded-2xl bg-gray-900 border-2 border-red-500 p-1 object-cover">
-                    <div class="flex-1">
-                        <button type="button" onclick="randomizeAvatar()" class="w-full bg-gray-900 hover:bg-gray-700 border border-gray-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer mb-1">🎲 Changer d'avatar</button>
-                        <div class="text-[10px] text-gray-400">Clique pour générer un nouveau look vectoriel unique.</div>
+                    <div class="flex-1 space-y-2">
+                        <div>
+                            <label class="block text-[10px] uppercase text-gray-400 mb-1">Style graphique</label>
+                            <select id="select-avatar-style" onchange="changeAvatarStyle()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-red-500">
+                                <option value="bottts">Robots stylés (Bottts)</option>
+                                <option value="avataaars">Humains vectoriels (Avataaars)</option>
+                                <option value="micah">Dessins modernes (Micah)</option>
+                                <option value="lorelei">Portraits élégants (Lorelei)</option>
+                                <option value="adventurer">Aventuriers (Adventurer)</option>
+                            </select>
+                        </div>
+                        <button type="button" onclick="randomizeAvatar()" class="w-full bg-gray-900 hover:bg-gray-700 border border-gray-700 text-white font-bold py-1.5 rounded-lg text-xs transition cursor-pointer">🎲 Aléatoire</button>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">Ton Titre</label>
+                    <label class="block text-xs text-gray-400 mb-1">Ton Titre / Surnom (Mixte)</label>
                     <select id="select-title" onchange="updateMyProfile()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
-                        <option value="Le Soiffard">Le Soiffard 🍷</option>
-                        <option value="Le Vainqueur masqué">Le Vainqueur masqué 🎭</option>
+                        <option value="Le/La Soiffard(e)">Le / La Soiffard(e) 🍷</option>
+                        <option value="La Reine de la nuit">La Reine de la nuit 👑</option>
+                        <option value="Le Roi de l'apéro">Le Roi de l'apéro 🍻</option>
+                        <option value="Le/La Vainqueur(e) masqué(e)">Le / La Vainqueur(e) masqué(e) 🎭</option>
                         <option value="La Terreur des tables">La Terreur des tables 💀</option>
-                        <option value="Le Gourmand">Le Gourmand 🍕</option>
-                        <option value="Le Stratège">Le Stratège 🃏</option>
+                        <option value="Le/La Gourmand(e)">Le / La Gourmand(e) 🍕</option>
+                        <option value="Le/La Stratège">Le / La Stratège 🃏</option>
                         <option value="L'Anarchiste">L'Anarchiste 🔥</option>
-                        <option value="Le VIP">Le VIP 👑</option>
+                        <option value="Le Caméléon">Le Caméléon 🦎</option>
+                        <option value="L'Imposteur(e)">L'Imposteur(e) 🕵️</option>
                     </select>
                 </div>
             </div>
 
             <div class="bg-gray-800/60 rounded-xl p-4 mb-4">
                 <h3 class="text-sm font-bold text-gray-300 mb-2">Joueurs connectés (<span id="player-count">0</span>)</h3>
-                <ul id="players-list" class="space-y-2 max-h-36 overflow-y-auto text-sm"></ul>
+                <ul id="players-list" class="space-y-2 max-h-32 overflow-y-auto text-sm"></ul>
             </div>
 
             <div id="host-controls" class="hidden">
@@ -125,7 +143,7 @@
                 <button id="btn-spin" onclick="spinWheel()" class="w-full bg-red-600 hover:bg-red-500 text-white font-extrabold py-3 rounded-xl transition shadow-lg shadow-red-600/30 uppercase cursor-pointer">Tourner ma Roue 🎡</button>
             </div>
 
-            <!-- CONTENEUR DÉFI & CHOIX DE LANCEMENT DU CHRONO PAR LE JOUEUR -->
+            <!-- CONTENEUR DÉFI & CHOIX DE LANCEMENT DU CHRONO -->
             <div id="challenge-container" class="hidden space-y-4">
                 <div class="bg-gray-800/80 border border-indigo-500/40 rounded-xl p-4 text-center">
                     <div class="flex justify-between items-center mb-2">
@@ -133,14 +151,12 @@
                         <span id="timer-display" class="font-mono font-bold text-sm text-indigo-300 bg-gray-900/80 px-3 py-1 rounded-lg border border-indigo-500/30">⏳ En attente de lancement</span>
                     </div>
                     
-                    <!-- Barre de progression douce -->
                     <div class="w-full bg-gray-900 rounded-full h-2 mb-3 overflow-hidden border border-gray-700">
                         <div id="timer-bar" class="bg-indigo-500 h-full transition-all duration-1000" style="width: 100%;"></div>
                     </div>
 
                     <p id="challenge-text" class="text-base font-semibold text-white my-3">Description...</p>
                     
-                    <!-- Bouton pour que le joueur déclenche son chrono quand il veut -->
                     <button id="btn-start-timer" onclick="startMyTimerManually()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition text-sm shadow-md cursor-pointer mb-2">▶️ Lancer mon chrono</button>
                     <p class="text-xs text-gray-400 italic">Lis ta consigne, puis clique quand tu es prêt à appliquer le défi.</p>
                 </div>
@@ -151,14 +167,23 @@
                 </div>
             </div>
 
-            <!-- SECTION ACCUSATION -->
-            <div class="mt-6 pt-4 border-t border-gray-800">
-                <h4 class="text-xs uppercase text-yellow-500 mb-2 font-bold tracking-wider">🕵️ Dénoncer un joueur en plein défi</h4>
+            <!-- SECTION BUZZER ÉVÉNEMENTIEL (PIQUANT) -->
+            <div class="mt-6 pt-4 border-t border-gray-800 text-center">
+                <div id="buzzer-banner" class="text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider">🚨 BUZZER D'ACCUSATION : INACTIF</div>
+                <button id="btn-buzzer" onclick="hitBuzzer()" disabled class="w-full bg-gray-800 text-gray-500 border border-gray-700 font-extrabold py-3 rounded-xl transition uppercase text-sm tracking-widest cursor-not-allowed">
+                    🔴 BUZZER (Inactif)
+                </button>
+                <div id="buzzer-status-msg" class="text-[11px] text-gray-500 mt-1 italic">Le buzzer s'illumine aléatoirement ou lors des actions pour permettre de dénoncer !</div>
+            </div>
+
+            <!-- MODAL / SECTION DE CHOIX DU SUSPECT LORSQU'ON BUZZ -->
+            <div id="accusation-panel" class="hidden mt-4 bg-yellow-950/40 border border-yellow-500/50 rounded-xl p-3 animate-pulse">
+                <h4 class="text-xs uppercase text-yellow-400 mb-2 font-bold tracking-wider text-center">🎯 TU AS BUZZÉ LE PREMIER ! Qui dénonces-tu ?</h4>
                 <div class="flex gap-2">
-                    <select id="select-accuse" class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-yellow-500">
+                    <select id="select-accuse" class="flex-1 bg-gray-900 border border-yellow-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
                         <option value="">Choisir un joueur suspect...</option>
                     </select>
-                    <button onclick="accusePlayer()" class="bg-yellow-600 hover:bg-yellow-500 text-gray-950 font-bold px-4 py-2 rounded-xl transition text-xs cursor-pointer shadow-lg">Dénoncer !</button>
+                    <button onclick="confirmAccusation()" class="bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold px-4 py-2 rounded-xl transition text-xs cursor-pointer shadow-lg">Valider 🚨</button>
                 </div>
             </div>
 
@@ -196,11 +221,15 @@
         let roomCode = '';
         let timerInterval = null;
 
-        let selectedGameMode = 'table'; // 'table' ou 'party'
+        let selectedGameMode = 'table'; 
+        let avatarStyle = 'bottts';
         let myAvatarSeed = 'player_' + Math.floor(Math.random() * 10000);
         let myAvatarUrl = '';
-        let myTitle = 'Le Soiffard';
+        let myTitle = 'Le/La Soiffard(e)';
         
+        let buzzerActive = false;
+        let buzzerEventTimer = null;
+
         let gameData = {
             players: [], 
             phase: 'login', 
@@ -210,6 +239,13 @@
         };
 
         // --- GESTION DES AVATARS VECTORIELS (DICEBEAR) ---
+        function changeAvatarStyle() {
+            const select = document.getElementById('select-avatar-style');
+            avatarStyle = select.value;
+            updateAvatarPreview();
+            updateMyProfile();
+        }
+
         function randomizeAvatar() {
             myAvatarSeed = 'seed_' + Math.random().toString(36).substring(7);
             updateAvatarPreview();
@@ -217,7 +253,7 @@
         }
 
         function updateAvatarPreview() {
-            myAvatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${myAvatarSeed}`;
+            myAvatarUrl = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${myAvatarSeed}`;
             const preview = document.getElementById('my-avatar-preview');
             if (preview) preview.src = myAvatarUrl;
         }
@@ -316,7 +352,7 @@
                         id: data.id, 
                         name: data.name, 
                         avatarUrl: data.avatarUrl || myAvatarUrl, 
-                        title: data.title || 'Le Soiffard', 
+                        title: data.title || 'Le/La Soiffard(e)', 
                         score: 0, 
                         status: 'waiting', 
                         currentChallenge: null, 
@@ -346,6 +382,7 @@
                     player.timerStarted = false;
                     player.status = 'playing';
                     broadcastGameState();
+                    triggerRandomBuzzerEvent();
                 }
             }
             else if (data.type === 'START_TIMER') {
@@ -367,6 +404,14 @@
                     player.timerStarted = false;
                     player.status = 'waiting'; 
                     broadcastGameState();
+                }
+            }
+            else if (data.type === 'BUZZ') {
+                if (buzzerActive) {
+                    buzzerActive = false;
+                    broadcastBuzzerState(false);
+                    connections.forEach(c => c.send({ type: 'BUZZ_WINNER', winnerId: conn.peer }));
+                    handleBuzzWinner(conn.peer);
                 }
             }
             else if (data.type === 'ACCUSE') {
@@ -396,6 +441,132 @@
             });
         }
 
+        function broadcastBuzzerState(active) {
+            buzzerActive = active;
+            updateBuzzerUI(active);
+            connections.forEach(conn => {
+                conn.send({ type: 'BUZZER_STATE', active: active });
+            });
+        }
+
+        function triggerRandomBuzzerEvent() {
+            const delay = Math.floor(Math.random() * 12000) + 8000;
+            if (buzzerEventTimer) clearTimeout(buzzerEventTimer);
+            
+            buzzerEventTimer = setTimeout(() => {
+                if (gameData.phase === 'game') {
+                    playSoundBuzzerAlert();
+                    broadcastBuzzerState(true);
+                }
+            }, delay);
+        }
+
+        function handleGuestIncomingData(data) {
+            if (data.type === 'STATE_UPDATE') {
+                gameData = data.state;
+                updateScreen();
+            } else if (data.type === 'BUZZER_STATE') {
+                buzzerActive = data.active;
+                updateBuzzerUI(data.active);
+                if (data.active) playSoundBuzzerAlert();
+            } else if (data.type === 'BUZZ_WINNER') {
+                handleBuzzWinner(data.winnerId);
+            }
+        }
+
+        function updateBuzzerUI(active) {
+            const btnBuzzer = document.getElementById('btn-buzzer');
+            const banner = document.getElementById('buzzer-banner');
+            const msg = document.getElementById('buzzer-status-msg');
+
+            if (active) {
+                btnBuzzer.disabled = false;
+                btnBuzzer.className = "w-full bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-black py-4 rounded-2xl transition uppercase text-base tracking-widest cursor-pointer shadow-xl shadow-yellow-500/50 animate-buzzer glow-yellow";
+                btnBuzzer.innerText = "🚨 BUZZER ACTIVÉ ! CLIQUE ! 🚨";
+                banner.innerText = "🔥 BUZZER ACTIF : C'est le moment de dénoncer ! 🔥";
+                banner.className = "text-xs uppercase text-yellow-400 mb-2 font-black tracking-wider glow-yellow";
+                msg.innerText = "Sois le plus rapide pour dénoncer un joueur en plein défi !";
+            } else {
+                btnBuzzer.disabled = true;
+                btnBuzzer.className = "w-full bg-gray-800 text-gray-500 border border-gray-700 font-extrabold py-3 rounded-xl transition uppercase text-sm tracking-widest cursor-not-allowed";
+                btnBuzzer.innerText = "🔴 BUZZER (Inactif)";
+                banner.innerText = "🚨 BUZZER D'ACCUSATION : INACTIF";
+                banner.className = "text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider";
+                msg.innerText = "Le buzzer s'illumine aléatoirement ou lors des actions pour permettre de dénoncer !";
+                document.getElementById('accusation-panel').classList.add('hidden');
+            }
+        }
+
+        function hitBuzzer() {
+            if (!buzzerActive) return;
+            playSoundSuccess();
+
+            if (myRole === 'host') {
+                buzzerActive = false;
+                broadcastBuzzerState(false);
+                handleBuzzWinner(myId);
+            } else {
+                buzzerActive = false;
+                updateBuzzerUI(false);
+                hostConnection.send({ type: 'BUZZ' });
+            }
+        }
+
+        function handleBuzzWinner(winnerId) {
+            const panel = document.getElementById('accusation-panel');
+            if (winnerId === myId) {
+                panel.classList.remove('hidden');
+                populateAccuseSelect();
+            } else {
+                const winner = gameData.players.find(p => p.id === winnerId);
+                const name = winner ? winner.name : 'Un joueur';
+                document.getElementById('buzzer-banner').innerText = `⚡ ${name} a buzzé en premier !`;
+            }
+        }
+
+        function populateAccuseSelect() {
+            const select = document.getElementById('select-accuse');
+            select.innerHTML = '<option value="">Choisir un joueur suspect...</option>' + 
+                gameData.players
+                    .filter(p => p.id !== myId)
+                    .map(p => `<option value="${p.id}">${p.name} (${p.status === 'playing' ? 'En plein défi ⏳' : 'En attente'})</option>`)
+                    .join('');
+        }
+
+        function confirmAccusation() {
+            const select = document.getElementById('select-accuse');
+            const targetId = select.value;
+            if (!targetId) {
+                alert("Sélectionne un joueur à dénoncer !");
+                return;
+            }
+
+            document.getElementById('accusation-panel').classList.add('hidden');
+
+            if (myRole === 'host') {
+                const accuser = gameData.players.find(p => p.id === myId);
+                const target = gameData.players.find(p => p.id === targetId);
+
+                if (accuser && target && target.status === 'playing') {
+                    playSoundSuccess();
+                    accuser.score += 75;
+                    target.score -= 50;
+                    target.currentChallenge = null;
+                    target.timeLeft = 0;
+                    target.maxTime = 0;
+                    target.timerStarted = false;
+                    target.status = 'waiting';
+                    broadcastGameState();
+                } else {
+                    playSoundFail();
+                    accuser.score -= 25;
+                    broadcastGameState();
+                }
+            } else {
+                hostConnection.send({ type: 'ACCUSE', targetId: targetId });
+            }
+        }
+
         function startParty() {
             gameData.phase = 'game';
             gameData.round = 1;
@@ -408,13 +579,6 @@
                 p.timerStarted = false;
             });
             broadcastGameState();
-        }
-
-        function handleGuestIncomingData(data) {
-            if (data.type === 'STATE_UPDATE') {
-                gameData = data.state;
-                updateScreen();
-            }
         }
 
         function startLocalTimer() {
@@ -481,6 +645,7 @@
                 me.timerStarted = false;
                 me.status = 'playing';
                 broadcastGameState();
+                triggerRandomBuzzerEvent();
             } else {
                 playSoundSpin();
                 hostConnection.send({ type: 'SPIN' });
@@ -529,43 +694,6 @@
             }
         }
 
-        function accusePlayer() {
-            const select = document.getElementById('select-accuse');
-            const targetId = select.value;
-            if (!targetId) {
-                alert("Sélectionne un joueur à dénoncer !");
-                return;
-            }
-            if (targetId === myId) {
-                alert("Tu ne peux pas t'accuser toi-même !");
-                return;
-            }
-
-            if (myRole === 'host') {
-                const accuser = gameData.players.find(p => p.id === myId);
-                const target = gameData.players.find(p => p.id === targetId);
-
-                if (accuser && target && target.status === 'playing') {
-                    playSoundSuccess();
-                    accuser.score += 75;
-                    target.score -= 50;
-                    target.currentChallenge = null;
-                    target.timeLeft = 0;
-                    target.maxTime = 0;
-                    target.timerStarted = false;
-                    target.status = 'waiting';
-                    broadcastGameState();
-                } else {
-                    playSoundFail();
-                    accuser.score -= 25;
-                    broadcastGameState();
-                }
-            } else {
-                hostConnection.send({ type: 'ACCUSE', targetId: targetId });
-            }
-            select.value = "";
-        }
-
         function showPodiumScreen() {
             gameData.phase = 'podium';
             triggerConfetti();
@@ -589,7 +717,7 @@
                             <img src="${p.avatarUrl}" class="w-8 h-8 rounded-xl bg-gray-900 border border-red-500 object-cover">
                             <div>
                                 <div class="font-bold text-sm">${p.name}</div>
-                                <div class="text-[10px] text-gray-400 italic">${p.title || 'Le Soiffard'}</div>
+                                <div class="text-[10px] text-gray-400 italic">${p.title || 'Le/La Soiffard(e)'}</div>
                             </div>
                         </div>
                         ${p.id === gameData.players[0].id ? '<span class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded">Hôte</span>' : ''}
@@ -626,15 +754,6 @@
                         startLocalTimer();
                     }
                 }
-
-                const selectAccuse = document.getElementById('select-accuse');
-                const currentSelection = selectAccuse.value;
-                selectAccuse.innerHTML = '<option value="">Choisir un joueur suspect...</option>' + 
-                    gameData.players
-                        .filter(p => p.id !== myId)
-                        .map(p => `<option value="${p.id}">${p.name} (${p.status === 'playing' ? (p.timerStarted ? 'En plein défi ⏳' : 'A pioché (En attente)') : 'En attente'})</option>`)
-                        .join('');
-                selectAccuse.value = currentSelection;
 
                 document.getElementById('live-scores').innerHTML = gameData.players.map((p) => {
                     let badge = '';
@@ -685,20 +804,16 @@
         function playSoundSpin() { try { new Tone.Synth().toDestination().triggerAttackRelease("C4", "8n"); } catch(e){} }
         function playSoundSuccess() { try { const s = new Tone.Synth().toDestination(); s.triggerAttackRelease("G4", "8n"); setTimeout(()=>s.triggerAttackRelease("C5", "4n"), 100); } catch(e){} }
         function playSoundFail() { try { new Tone.Synth().toDestination().triggerAttackRelease("E3", "4n"); } catch(e){} }
+        function playSoundBuzzerAlert() { try { const s = new Tone.Synth({ oscillator: { type: "sawtooth" } }).toDestination(); s.triggerAttackRelease("A4", "4n"); setTimeout(()=>s.triggerAttackRelease("C5", "4n"), 150); } catch(e){} }
         function triggerConfetti() { try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch(e){} }
 
-        // Initialisation de l'avatar au chargement
         updateAvatarPreview();
 
-
-        // ==========================================
-        // LISTE DES DÉFIS : VERSION "À TABLE"
-        // ==========================================
         const challengesTable = [
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90 },
-            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120 },
+            { cat: '🍽 Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, interdis-toi de poser tes coudes sur la table en adoptant une posture ultra-rigide.', time: 90 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, donne un surnom affectueux (ex: "Mon p’tit chou") à chaque fois que tu t’adresses au joueur à ta gauche.', time: 120 },
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90 },
@@ -709,11 +824,6 @@
             { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, fais comme si ton plat était brûlant et souffle dessus exagérément avant chaque bouchée.', time: 90 }
         ];
 
-
-        // ==========================================
-        // LISTE DES DÉFIS : VERSION "SOIRÉE / APÉRO"
-        // (Sans couverts ni nourriture)
-        // ==========================================
         const challengesParty = [
             { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, finis obligatoirement toutes tes phrases par "C\'est la vie de mon chat".', time: 90 },
             { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, chaque fois que quelqu’un rit, tu dois applaudir discrètement avec enthousiasme.', time: 120 },
