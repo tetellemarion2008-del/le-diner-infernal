@@ -72,38 +72,80 @@
             <div id="display-room-code" class="text-5xl font-mono font-black text-red-500 tracking-widest mb-2">----</div>
             <div id="display-room-mode" class="inline-block bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-bold px-3 py-1 rounded-full mb-4">Mode : 🍽️ À Table</div>
 
-            <div class="bg-gray-800/80 border border-red-500/20 rounded-xl p-4 mb-4 text-left">
-                <h3 class="text-xs uppercase font-bold text-red-400 mb-2">🎭 Ton Avatar & Style</h3>
+            <!-- CRÉATEUR DE PERSONNAGE COMPLET -->
+            <div class="bg-gray-800/80 border border-red-500/20 rounded-xl p-4 mb-4 text-left space-y-3">
+                <h3 class="text-xs uppercase font-bold text-red-400 mb-1">🎭 Crée ton Personnage</h3>
                 
-                <div class="flex items-center space-x-4 mb-3">
-                    <img id="my-avatar-preview" src="" alt="Avatar" class="w-16 h-16 rounded-2xl bg-gray-900 border-2 border-red-500 p-1 object-cover">
+                <div class="flex items-center space-x-4">
+                    <img id="my-avatar-preview" src="" alt="Avatar" class="w-20 h-20 rounded-2xl bg-gray-900 border-2 border-red-500 p-1 object-cover shadow-lg">
                     <div class="flex-1 space-y-2">
                         <div>
-                            <label class="block text-[10px] uppercase text-gray-400 mb-1">Style graphique</label>
-                            <select id="select-avatar-style" onchange="changeAvatarStyle()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-red-500">
-                                <option value="bottts">Robots stylés (Bottts)</option>
-                                <option value="avataaars">Humains vectoriels (Avataaars)</option>
-                                <option value="micah">Dessins modernes (Micah)</option>
-                                <option value="lorelei">Portraits élégants (Lorelei)</option>
-                                <option value="adventurer">Aventuriers (Adventurer)</option>
+                            <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Style d'avatar</label>
+                            <select id="select-avatar-style" onchange="updateCharacterCustomization()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-red-500">
+                                <option value="avataaars">Humain stylé (Avataaars)</option>
+                                <option value="bottts">Monstre / Robot (Bottts)</option>
+                                <option value="micah">Créature Dessin (Micah)</option>
+                                <option value="lorelei">Portrait Fantastique (Lorelei)</option>
+                                <option value="adventurer">Aventurier / Créature (Adventurer)</option>
                             </select>
                         </div>
-                        <button type="button" onclick="randomizeAvatar()" class="w-full bg-gray-900 hover:bg-gray-700 border border-gray-700 text-white font-bold py-1.5 rounded-lg text-xs transition cursor-pointer">🎲 Aléatoire</button>
+                        <button type="button" onclick="randomizeCharacter()" class="w-full bg-gray-900 hover:bg-gray-700 border border-gray-700 text-white font-bold py-1.5 rounded-lg text-xs transition cursor-pointer">🎲 Tout Aléatoire</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Type de créature</label>
+                        <select id="select-creature-type" onchange="updateCharacterCustomization()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-red-500">
+                            <option value="human">👤 Humain Normal</option>
+                            <option value="monster">👹 Monstre / Démon</option>
+                            <option value="cyborg">🤖 Cyborg / Fantastique</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Teinte / Peau</label>
+                        <select id="select-skin-color" onchange="updateCharacterCustomization()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-red-500">
+                            <option value="default">Naturel / Classique</option>
+                            <option value="red">Rouge Infernal 🔥</option>
+                            <option value="green">Vert Monstre 🟢</option>
+                            <option value="purple">Violet Mystique 🔮</option>
+                            <option value="blue">Bleu Glacial ❄️</option>
+                            <option value="dark">Noir Obscur 🌑</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Cheveux / Crinière</label>
+                        <select id="select-hair-style" onchange="updateCharacterCustomization()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-red-500">
+                            <option value="normal">Normaux / Courts</option>
+                            <option value="long">Longs / Ébouriffés</option>
+                            <option value="wild">Sauvages / Épiques</option>
+                            <option value="bald">Chauve / Aucun</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Regard / Yeux</label>
+                        <select id="select-eye-style" onchange="updateCharacterCustomization()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-red-500">
+                            <option value="normal">Normaux</option>
+                            <option value="wink">Clin d'œil complice 😉</option>
+                            <option value="happy">Joyeux / Brillant ✨</option>
+                            <option value="squint">Perçant / Suspect 🤨</option>
+                        </select>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1">Ton Titre / Surnom</label>
+                    <label class="block text-[10px] uppercase text-gray-400 mb-0.5">Ton Titre / Surnom à table</label>
                     <select id="select-title" onchange="updateMyProfile()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
                         <option value="Le/La Soiffard(e)">Le / La Soiffard(e) 🍷</option>
                         <option value="La Reine de la nuit">La Reine de la nuit 👑</option>
                         <option value="Le Roi de l'apéro">Le Roi de l'apéro 🍻</option>
-                        <option value="Le/La Vainqueur(e) masqué(e)">Le / La Vainqueur(e) masqué(e) 🎭</option>
                         <option value="La Terreur des tables">La Terreur des tables 💀</option>
+                        <option value="Le Monstre des abysses">Le Monstre des abysses 🦑</option>
                         <option value="Le/La Gourmand(e)">Le / La Gourmand(e) 🍕</option>
-                        <option value="Le/La Stratège">Le / La Stratège 🃏</option>
                         <option value="L'Anarchiste">L'Anarchiste 🔥</option>
-                        <option value="Le Caméléon">Le Caméléon 🦎</option>
                         <option value="L'Imposteur(e)">L'Imposteur(e) 🕵️</option>
                     </select>
                 </div>
@@ -260,7 +302,13 @@
         let pendingChallenge = null;
 
         let selectedGameMode = 'table'; 
-        let avatarStyle = 'bottts';
+        
+        // Personnalisation complète du personnage
+        let avatarStyle = 'avataaars';
+        let creatureType = 'human';
+        let skinColor = 'default';
+        let hairStyle = 'normal';
+        let eyeStyle = 'normal';
         let myAvatarSeed = 'player_' + Math.floor(Math.random() * 10000);
         let myAvatarUrl = '';
         let myTitle = 'Le/La Soiffard(e)';
@@ -278,24 +326,70 @@
             mode: 'table',
             consecutiveFails: 0,
             buzzerBlockedUntil: 0,
-            usedChallengeIds: [] // Pour éviter de répéter les défis
+            usedChallengeIds: []
         };
 
-        function changeAvatarStyle() {
-            const select = document.getElementById('select-avatar-style');
-            avatarStyle = select.value;
+        function updateCharacterCustomization() {
+            avatarStyle = document.getElementById('select-avatar-style').value;
+            creatureType = document.getElementById('select-creature-type').value;
+            skinColor = document.getElementById('select-skin-color').value;
+            hairStyle = document.getElementById('select-hair-style').value;
+            eyeStyle = document.getElementById('select-eye-style').value;
+            
             updateAvatarPreview();
             updateMyProfile();
         }
 
-        function randomizeAvatar() {
+        function randomizeCharacter() {
+            const styles = ['avataaars', 'bottts', 'micah', 'lorelei', 'adventurer'];
+            const creatures = ['human', 'monster', 'cyborg'];
+            const skins = ['default', 'red', 'green', 'purple', 'blue', 'dark'];
+            const hairs = ['normal', 'long', 'wild', 'bald'];
+            const eyes = ['normal', 'wink', 'happy', 'squint'];
+
+            avatarStyle = styles[Math.floor(Math.random() * styles.length)];
+            creatureType = creatures[Math.floor(Math.random() * creatures.length)];
+            skinColor = skins[Math.floor(Math.random() * skins.length)];
+            hairStyle = hairs[Math.floor(Math.random() * hairs.length)];
+            eyeStyle = eyes[Math.floor(Math.random() * eyes.length)];
             myAvatarSeed = 'seed_' + Math.random().toString(36).substring(7);
+
+            document.getElementById('select-avatar-style').value = avatarStyle;
+            document.getElementById('select-creature-type').value = creatureType;
+            document.getElementById('select-skin-color').value = skinColor;
+            document.getElementById('select-hair-style').value = hairStyle;
+            document.getElementById('select-eye-style').value = eyeStyle;
+
             updateAvatarPreview();
             updateMyProfile();
         }
 
         function updateAvatarPreview() {
-            myAvatarUrl = `https://api.dicebear.com/7.x/${avatarStyle}/svg?seed=${myAvatarSeed}`;
+            // Construction des paramètres pour l'API Dicebear en fonction des choix
+            let queryParams = `seed=${myAvatarSeed}`;
+            
+            // Ajustement des couleurs / styles selon la créature et la peau
+            if (skinColor === 'red') queryParams += `&backgroundColor=7f1d1d&skinColor=ff4d4d`;
+            else if (skinColor === 'green') queryParams += `&backgroundColor=064e3b&skinColor=4ade80`;
+            else if (skinColor === 'purple') queryParams += `&backgroundColor=581c87&skinColor=c084fc`;
+            else if (skinColor === 'blue') queryParams += `&backgroundColor=1e3a8a&skinColor=60a5fa`;
+            else if (skinColor === 'dark') queryParams += `&backgroundColor=111827&skinColor=374151`;
+
+            if (creatureType === 'monster' && avatarStyle === 'bottts') {
+                queryParams += `&primaryColor=ef4444&eyes=bulging,robocorp`;
+            } else if (creatureType === 'cyborg') {
+                queryParams += `&glasses=variant02&accessoriesProbability=100`;
+            }
+
+            if (hairStyle === 'bald') queryParams += `&top=noHair`;
+            else if (hairStyle === 'long') queryParams += `&top=longHair,straightDan`;
+            else if (hairStyle === 'wild') queryParams += `&top=dreadlocks,shaggyMullet`;
+
+            if (eyeStyle === 'wink') queryParams += `&eyes=wink,happy`;
+            else if (eyeStyle === 'happy') queryParams += `&eyes=happy,hearts`;
+            else if (eyeStyle === 'squint') queryParams += `&eyes=squint,surprised`;
+
+            myAvatarUrl = `https://api.dicebear.com/7.x/${avatarStyle}/svg?${queryParams}`;
             const preview = document.getElementById('my-avatar-preview');
             if (preview) preview.src = myAvatarUrl;
         }
@@ -411,7 +505,6 @@
             const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
             let available = pool.filter(c => !gameData.usedChallengeIds.includes(c.id) && (isHardOnly ? c.isHard : true));
             
-            // Si tout a été épuisé, on réinitialise la mémoire des défis
             if (available.length === 0) {
                 gameData.usedChallengeIds = [];
                 available = pool.filter(c => (isHardOnly ? c.isHard : true));
@@ -494,7 +587,6 @@
                         const ptsToAdd = player.currentChallenge.isHard ? 4 : 2;
                         player.score += ptsToAdd;
                     } else {
-                        // Échec ou abandon : -2 pts si hard, 0 pt si normal
                         const ptsToSubtract = player.currentChallenge.isHard ? 2 : 0;
                         player.score -= ptsToSubtract;
                     }
@@ -554,8 +646,8 @@
 
             if (isCorrect) {
                 gameData.consecutiveFails = 0;
-                accuser.score += 1; // Tu surprends qqn = 1 point
-                target.score -= 1;  // Tu te fais prendre = -1 point
+                accuser.score += 1;
+                target.score -= 1;
                 target.currentChallenge = null;
                 target.timeLeft = 0;
                 target.maxTime = 0;
@@ -573,7 +665,7 @@
                     }
                 });
             } else {
-                accuser.score -= 1; // Fausse accusation = pénalité de -1 point
+                accuser.score -= 1;
                 gameData.consecutiveFails++;
 
                 if (gameData.consecutiveFails >= 3) {
@@ -1144,14 +1236,14 @@
         updateAvatarPreview();
 
         const challengesTable = [
-            { id: 't1', cat: '🍽️️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90, isHard: false },
+            { id: 't1', cat: '🍽 Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90, isHard: false },
             { id: 't2', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120, isHard: false },
-            { id: 't3', cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90, isHard: false },
+            { id: 't3', cat: '🍽️️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90, isHard: false },
             { id: 't4_hard', cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de dire "oui", "non", "je", et "tu" sous peine de perdre gros.', time: 180, isHard: true },
             { id: 't5', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120, isHard: false },
             { id: 't6_hard', cat: '🔥 HARD : Table', text: 'Pendant 2 minutes, mange absolument tout ce que tu portes à ta bouche avec tes mains uniquement (interdiction d’utiliser les couverts).', time: 120, isHard: true },
             { id: 't7', cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90, isHard: false },
-            { id: 't8', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120, isHard: false },
+            { id: 't8', cat: '🍽️️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120, isHard: false },
             { id: 't9_hard', cat: '🔥 HARD : Table', text: 'Pendant 3 minutes, interdis-toi de toucher ton verre toi-même : tu dois supplier quelqu’un d’autre de te faire boire.', time: 180, isHard: true },
             { id: 't10', cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ton couvert bien à l’horizontale après chaque bouchée.', time: 90, isHard: false },
             { id: 't11', cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, demande l’avis du joueur à ta droite sur absolument TOUT ce que tu manges ou bois.', time: 120, isHard: false },
