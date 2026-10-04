@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <!-- PeerJS pour le multijoueur direct entre téléphones -->
+    <!-- PeerJS pour le multijoueur direct -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         body { font-family: 'Outfit', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
@@ -80,23 +80,26 @@
                 </div>
             </div>
 
+            <!-- CONTENEUR ROUE -->
             <div id="wheel-container" class="text-center py-6">
                 <div class="w-48 h-48 mx-auto mb-6 rounded-full border-4 border-red-500 flex items-center justify-center bg-gradient-to-tr from-red-950 via-gray-900 to-orange-950 shadow-2xl">
                     <span id="wheel-text" class="text-xl font-black text-center px-2 text-red-300">ROUE INFERNALE</span>
                 </div>
-                <button id="btn-spin" onclick="spinWheel()" class="w-full bg-red-600 hover:bg-red-500 text-white font-extrabold py-3 rounded-xl transition shadow-lg shadow-red-600/30 uppercase cursor-pointer">Tourner la Roue 🎡</button>
+                <button id="btn-spin" onclick="spinWheel()" class="w-full bg-red-600 hover:bg-red-500 text-white font-extrabold py-3 rounded-xl transition shadow-lg shadow-red-600/30 uppercase cursor-pointer">Tourner ma Roue 🎡</button>
+                <p id="not-my-turn-spin" class="text-xs text-gray-400 italic mt-3 hidden">Ce n'est pas ton tour de tourner la roue...</p>
             </div>
 
+            <!-- CONTENEUR DÉFI -->
             <div id="challenge-container" class="hidden space-y-4">
                 <div class="bg-gray-800/80 border border-red-500/30 rounded-xl p-4 text-center">
                     <span id="challenge-category" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-red-950 text-red-400 mb-2 uppercase">Catégorie</span>
                     <p id="challenge-text" class="text-base font-semibold text-white mb-4">Description...</p>
                 </div>
-                <div id="validation-buttons" class="grid grid-cols-2 gap-3">
+                <div id="validation-buttons" class="grid grid-cols-2 gap-3 hidden">
                     <button onclick="validateChallenge(true)" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Réussi (+100) ✅</button>
                     <button onclick="validateChallenge(false)" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Échoué ❌</button>
                 </div>
-                <p id="waiting-validation" class="text-center text-xs text-gray-400 italic hidden">En attente que le joueur actif valide...</p>
+                <p id="waiting-validation" class="text-center text-xs text-gray-400 italic">En attente que le joueur actif réalise son défi...</p>
             </div>
 
             <div class="mt-6 pt-4 border-t border-gray-800">
@@ -114,20 +117,21 @@
 
     </main>
 
-    <footer class="w-full text-center py-4 text-xs text-gray-600">Le Dîner Infernal • Mode Connecté</footer>
+    <footer class="w-full text-center py-4 text-xs text-gray-600">Le Dîner Infernal • Multijoueur Connecté</footer>
 
     <script>
         let peer = null;
-        let connections = []; // Utilisé par l'hôte pour stocker les connexions des invités
-        let hostConnection = null; // Utilisé par l'invité pour parler à l'hôte
+        let connections = []; // Hôte stocke les connexions
+        let hostConnection = null; // Invité stocke la connexion vers l'hôte
         
-        let myRole = ''; // 'host' ou 'guest'
+        let myRole = ''; 
+        let myId = '';
         let myPseudo = '';
         let roomCode = '';
         
         let gameData = {
-            players: [], // [{id, name, score}]
-            phase: 'login', // lobby, game, podium
+            players: [], 
+            phase: 'login', 
             currentTurnIndex: 0,
             round: 1,
             maxRounds: 5,
@@ -135,9 +139,9 @@
         };
 
         const challenges = [
-            { cat: 'Chill / Apéro', text: 'Imite ton influenceur ou streameur préféré pendant 15 secondes sans parler, les autres doivent deviner.' },
-            { cat: 'Piquant', text: 'Raconte la chose la plus gênante qui t’est arrivée en soirée en regardant le joueur à ta gauche dans les yeux.' },
-            { cat: 'Hardcore', text: 'Laisse le joueur à ta droite envoyer un message rigolo à la dernière personne de ton historique Snapchat/WhatsApp.' },
+            { cat: 'Chill / Apéro', text: 'Imite ton influenceur ou streameur préféré pendant 15 secondes sans parler.' },
+            { cat: 'Piquant', text: 'Raconte la chose la plus gênante qui t’est arrivée en soirée en regardant le joueur à ta gauche.' },
+            { cat: 'Hardcore', text: 'Laisse le joueur à ta droite envoyer un message rigolo sur ton dernier historique de discussion.' },
             { cat: 'Chill / Apéro', text: 'Cite 3 marques de fast-food en moins de 5 secondes, sinon tu bois une gorgée.' },
             { cat: 'Piquant', text: 'Fais ton meilleur discours de remerciement pour un faux prix Nobel de bêtise pendant 30 secondes.' },
             { cat: 'Hardcore', text: 'Imite un chat en détresse pendant qu\'on te pose des questions pendant 20 secondes.' },
@@ -151,22 +155,17 @@
 
             roomCode = Math.floor(1000 + Math.random() * 9000).toString();
             myRole = 'host';
+            myId = 'diner_' + roomCode;
 
-            // Création du Peer avec un ID basé sur le code salon (ex: diner_1234)
-            peer = new Peer('diner_' + roomCode);
+            peer = new Peer(myId);
 
-            peer.on('open', () => {
-                gameData.players = [{ id: peer.id, name: myPseudo, score: 0 }];
+            peer.on('open', (id) => {
+                myId = id;
+                gameData.players = [{ id: myId, name: myPseudo, score: 0 }];
                 gameData.phase = 'lobby';
                 updateScreen();
             });
 
-            peer.on('error', (err) => {
-                alert("Erreur de création du salon, réessaie !");
-                console.error(err);
-            });
-
-            // Quand un joueur rejoint l'hôte
             peer.on('connection', (conn) => {
                 conn.on('data', (data) => {
                     handleHostIncomingData(conn, data);
@@ -193,56 +192,48 @@
             peer = new Peer();
 
             peer.on('open', (id) => {
+                myId = id;
                 hostConnection = peer.connect('diner_' + roomCode);
 
                 hostConnection.on('open', () => {
-                    // On envoie notre pseudo à l'hôte
-                    hostConnection.send({ type: 'JOIN', name: myPseudo });
+                    hostConnection.send({ type: 'JOIN', name: myPseudo, id: myId });
                 });
 
                 hostConnection.on('data', (data) => {
                     handleGuestIncomingData(data);
                 });
-
-                hostConnection.on('error', () => {
-                    alert("Impossible de rejoindre ce salon. Vérifie le code !");
-                });
-            });
-
-            peer.on('error', () => {
-                alert("Erreur de connexion au réseau.");
             });
         }
 
-        // --- GESTION CÔTÉ HÔTE ---
+        // --- HÔTE : GESTION DES REQUÊTES ---
         function handleHostIncomingData(conn, data) {
             if (data.type === 'JOIN') {
-                if (!connections.includes(conn)) {
-                    connections.push(conn);
-                }
-                // Ajoute ou met à jour le joueur
-                const existing = gameData.players.find(p => p.id === conn.peer);
+                if (!connections.includes(conn)) connections.push(conn);
+                const existing = gameData.players.find(p => p.id === data.id);
                 if (!existing) {
-                    gameData.players.push({ id: conn.peer, name: data.name, score: 0 });
+                    gameData.players.push({ id: data.id, name: data.name, score: 0 });
                 }
                 broadcastGameState();
             }
             else if (data.type === 'SPIN') {
-                if (gameData.phase === 'game') {
+                const currentPlayer = gameData.players[gameData.currentTurnIndex];
+                if (currentPlayer && currentPlayer.id === conn.peer) {
                     playSoundSpin();
+                    // Attribue un défi unique aléatoire
                     gameData.currentChallenge = challenges[Math.floor(Math.random() * challenges.length)];
                     broadcastGameState();
                 }
             }
             else if (data.type === 'VALIDATE') {
-                processValidation(data.success);
+                const currentPlayer = gameData.players[gameData.currentTurnIndex];
+                if (currentPlayer && currentPlayer.id === conn.peer) {
+                    processValidation(data.success);
+                }
             }
         }
 
         function broadcastGameState() {
-            // Met à jour l'hôte
             updateScreen();
-            // Envoie à tous les invités
             connections.forEach(conn => {
                 conn.send({ type: 'STATE_UPDATE', state: gameData });
             });
@@ -279,7 +270,7 @@
             broadcastGameState();
         }
 
-        // --- GESTION CÔTÉ INVITÉ ---
+        // --- INVITÉ : RÉCEPTION ---
         function handleGuestIncomingData(data) {
             if (data.type === 'STATE_UPDATE') {
                 gameData = data.state;
@@ -290,8 +281,11 @@
             }
         }
 
-        // --- ACTIONS UI ---
+        // --- ACTIONS JOUEURS ---
         function spinWheel() {
+            const currentPlayer = gameData.players[gameData.currentTurnIndex];
+            if (!currentPlayer || currentPlayer.id !== myId) return;
+
             if (myRole === 'host') {
                 playSoundSpin();
                 gameData.currentChallenge = challenges[Math.floor(Math.random() * challenges.length)];
@@ -302,6 +296,9 @@
         }
 
         function validateChallenge(success) {
+            const currentPlayer = gameData.players[gameData.currentTurnIndex];
+            if (!currentPlayer || currentPlayer.id !== myId) return;
+
             if (myRole === 'host') {
                 processValidation(success);
             } else {
@@ -309,9 +306,9 @@
             }
         }
 
-        // --- AFFICHAGE ---
+        // --- INTERFACE ---
         function updateScreen() {
-            document.getElementById('screen-login').classList.toggle('hidden', gameData.phase !== 'login' && gameData.phase !== 'loading');
+            document.getElementById('screen-login').classList.toggle('hidden', gameData.phase !== 'login');
             document.getElementById('screen-lobby').classList.toggle('hidden', gameData.phase !== 'lobby');
             document.getElementById('screen-game').classList.toggle('hidden', gameData.phase !== 'game');
             document.getElementById('screen-podium').classList.toggle('hidden', gameData.phase !== 'podium');
@@ -332,7 +329,7 @@
 
             if (gameData.phase === 'game') {
                 const currentPlayer = gameData.players[gameData.currentTurnIndex];
-                const isMyTurn = currentPlayer && ((myRole === 'host' && gameData.currentTurnIndex === 0) || (currentPlayer.name === myPseudo));
+                const isMyTurn = currentPlayer && (currentPlayer.id === myId);
 
                 document.getElementById('current-player-turn').innerText = currentPlayer ? currentPlayer.name : '...';
                 document.getElementById('round-counter').innerText = `${gameData.round} / ${gameData.maxRounds}`;
@@ -341,21 +338,25 @@
                 document.getElementById('wheel-container').classList.toggle('hidden', hasChallenge);
                 document.getElementById('challenge-container').classList.toggle('hidden', !hasChallenge);
 
+                // Bouton tourner la roue accessible uniquement au joueur dont c'est le tour
+                document.getElementById('btn-spin').classList.toggle('hidden', !isMyTurn);
+                document.getElementById('not-my-turn-spin').classList.toggle('hidden', isMyTurn);
+
                 if (hasChallenge) {
                     document.getElementById('challenge-category').innerText = gameData.currentChallenge.cat;
                     document.getElementById('challenge-text').innerText = gameData.currentChallenge.text;
                     
-                    // Seul le joueur dont c'est le tour peut valider / échouer
+                    // Seul le joueur actif peut valider son propre défi
                     document.getElementById('validation-buttons').classList.toggle('hidden', !isMyTurn);
                     document.getElementById('waiting-validation').classList.toggle('hidden', isMyTurn);
                 } else {
-                    document.getElementById('wheel-text').innerText = "ROUE INFERNALE";
+                    document.getElementById('wheel-text').innerText = isMyTurn ? "À TOI DE TOURNER !" : `Tour de ${currentPlayer ? currentPlayer.name : ''}`;
                 }
 
                 const sorted = [...gameData.players].sort((a,b) => b.score - a.score);
                 document.getElementById('live-scores').innerHTML = sorted.map((p, i) => `
-                    <div class="flex justify-between items-center text-gray-300 bg-gray-800/40 px-2 py-1 rounded">
-                        <span>#${i+1} ${p.name}</span>
+                    <div class="flex justify-between items-center text-gray-300 bg-gray-800/40 px-2 py-1 rounded ${p.id === currentPlayer?.id ? 'border border-red-500' : ''}">
+                        <span>#${i+1} ${p.name} ${p.id === myId ? '(Toi)' : ''}</span>
                         <span class="font-bold text-red-400">${p.score} pts</span>
                     </div>
                 `).join('');
