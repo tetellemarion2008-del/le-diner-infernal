@@ -9,7 +9,7 @@
     <!-- Tone.js pour l'audio -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <!-- Canvas Confetti -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/canvas-confetti.browser.min.js"></script>
     <!-- PeerJS pour le multijoueur direct -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
@@ -43,7 +43,6 @@
                     <input type="text" id="input-pseudo" placeholder="Ex: Alex, Sarah..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 font-semibold" maxlength="15">
                 </div>
 
-                <!-- SÉLECTEUR DE MODE DE JEU POUR L'HÔTE -->
                 <div>
                     <label class="block text-xs uppercase text-gray-400 mb-1">Mode de jeu (Si tu crées le salon)</label>
                     <div class="grid grid-cols-2 gap-2">
@@ -73,7 +72,6 @@
             <div id="display-room-code" class="text-5xl font-mono font-black text-red-500 tracking-widest mb-2">----</div>
             <div id="display-room-mode" class="inline-block bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-bold px-3 py-1 rounded-full mb-4">Mode : 🍽️ À Table</div>
 
-            <!-- CUSTOMISATION DU PERSO AVEC AVATARS VECTORIELS PERSONNALISABLES -->
             <div class="bg-gray-800/80 border border-red-500/20 rounded-xl p-4 mb-4 text-left">
                 <h3 class="text-xs uppercase font-bold text-red-400 mb-2">🎭 Ton Avatar & Style</h3>
                 
@@ -167,23 +165,30 @@
                 </div>
             </div>
 
-            <!-- SECTION BUZZER ÉVÉNEMENTIEL (PIQUANT) -->
+            <!-- SECTION BUZZER STRATÉGIQUE (SE DÉVERROUILLE QUAND UN CHRONO TOURNE) -->
             <div class="mt-6 pt-4 border-t border-gray-800 text-center">
-                <div id="buzzer-banner" class="text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider">🚨 BUZZER D'ACCUSATION : INACTIF</div>
+                <div id="buzzer-banner" class="text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider">🚨 BUZZER D'ACCUSATION : EN ATTENTE D'UN DÉFI</div>
                 <button id="btn-buzzer" onclick="hitBuzzer()" disabled class="w-full bg-gray-800 text-gray-500 border border-gray-700 font-extrabold py-3 rounded-xl transition uppercase text-sm tracking-widest cursor-not-allowed">
-                    🔴 BUZZER (Inactif)
+                    🔴 BUZZER (Verrouillé)
                 </button>
-                <div id="buzzer-status-msg" class="text-[11px] text-gray-500 mt-1 italic">Le buzzer s'illumine aléatoirement ou lors des actions pour permettre de dénoncer !</div>
+                <div id="buzzer-status-msg" class="text-[11px] text-gray-500 mt-1 italic">Le buzzer s'active automatiquement dès qu'un joueur lance son chrono pour qu'on puisse le piéger !</div>
             </div>
 
-            <!-- MODAL / SECTION DE CHOIX DU SUSPECT LORSQU'ON BUZZ -->
+            <!-- PANNEAU D'ACCUSATION & DEVINETTE DE L'OBJECTIF -->
             <div id="accusation-panel" class="hidden mt-4 bg-yellow-950/40 border border-yellow-500/50 rounded-xl p-3 animate-pulse">
-                <h4 class="text-xs uppercase text-yellow-400 mb-2 font-bold tracking-wider text-center">🎯 TU AS BUZZÉ LE PREMIER ! Qui dénonces-tu ?</h4>
-                <div class="flex gap-2">
-                    <select id="select-accuse" class="flex-1 bg-gray-900 border border-yellow-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
-                        <option value="">Choisir un joueur suspect...</option>
-                    </select>
-                    <button onclick="confirmAccusation()" class="bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold px-4 py-2 rounded-xl transition text-xs cursor-pointer shadow-lg">Valider 🚨</button>
+                <h4 class="text-xs uppercase text-yellow-400 mb-2 font-bold tracking-wider text-center">🎯 TU AS BUZZÉ LE PREMIER ! Piège la cible :</h4>
+                <div class="space-y-2">
+                    <div>
+                        <label class="block text-[10px] text-yellow-300 uppercase mb-1">1. Qui essaies-tu de piéger ?</label>
+                        <select id="select-accuse" class="w-full bg-gray-900 border border-yellow-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+                            <option value="">Choisir un joueur en plein défi...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-yellow-300 uppercase mb-1">2. Quelle est sa consigne / son objectif secret ?</label>
+                        <input type="text" id="input-guess-text" placeholder="Ex: Il ne doit pas utiliser sa main droite..." class="w-full bg-gray-900 border border-yellow-500/50 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+                    </div>
+                    <button onclick="confirmAccusation()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-bold py-2.5 rounded-xl transition text-xs cursor-pointer shadow-lg uppercase">Valider mon accusation 🚨</button>
                 </div>
             </div>
 
@@ -192,7 +197,6 @@
                 <div id="live-scores" class="space-y-1 max-h-32 overflow-y-auto text-xs"></div>
             </div>
 
-            <!-- BOUTON HÔTE : VOIR LE PODIUM & RÉSULTATS -->
             <div id="host-podium-trigger" class="hidden mt-6 pt-4 border-t border-gray-800 text-center">
                 <button onclick="showPodiumScreen()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-gray-950 font-extrabold py-3 rounded-xl transition uppercase text-sm shadow-lg cursor-pointer">🏆 Afficher les Résultats & Podium (Hôte)</button>
             </div>
@@ -228,7 +232,8 @@
         let myTitle = 'Le/La Soiffard(e)';
         
         let buzzerActive = false;
-        let buzzerEventTimer = null;
+        let buzzerBlockedUntil = 0; // Pénalité de blocage du buzzer en ms
+        let buzzerBlockInterval = null;
 
         let gameData = {
             players: [], 
@@ -238,7 +243,6 @@
             mode: 'table'
         };
 
-        // --- GESTION DES AVATARS VECTORIELS (DICEBEAR) ---
         function changeAvatarStyle() {
             const select = document.getElementById('select-avatar-style');
             avatarStyle = select.value;
@@ -312,6 +316,7 @@
                 conn.on('close', () => {
                     connections = connections.filter(c => c !== conn);
                     gameData.players = gameData.players.filter(p => p.id !== conn.peer);
+                    checkBuzzerConditions();
                     broadcastGameState();
                 });
             });
@@ -381,14 +386,15 @@
                     player.maxTime = randomChallenge.time;
                     player.timerStarted = false;
                     player.status = 'playing';
+                    checkBuzzerConditions();
                     broadcastGameState();
-                    triggerRandomBuzzerEvent();
                 }
             }
             else if (data.type === 'START_TIMER') {
                 const player = gameData.players.find(p => p.id === conn.peer);
                 if (player && player.status === 'playing' && !player.timerStarted) {
                     player.timerStarted = true;
+                    checkBuzzerConditions();
                     broadcastGameState();
                 }
             }
@@ -403,6 +409,7 @@
                     player.maxTime = 0;
                     player.timerStarted = false;
                     player.status = 'waiting'; 
+                    checkBuzzerConditions();
                     broadcastGameState();
                 }
             }
@@ -418,17 +425,31 @@
                 const accuser = gameData.players.find(p => p.id === conn.peer);
                 const target = gameData.players.find(p => p.id === data.targetId);
 
-                if (accuser && target && target.status === 'playing') {
-                    accuser.score += 75; 
+                // Analyse simple de similarité de mots-clés pour valider l'idée de l'objectif
+                const guessedText = (data.guessText || "").toLowerCase().trim();
+                const actualText = (target && target.currentChallenge) ? target.currentChallenge.text.toLowerCase() : "";
+                
+                // On vérifie si l'utilisateur a tapé quelques mots clés pertinents (plus de 3 caractères)
+                const keywords = guessedText.split(' ').filter(w => w.length > 3);
+                let matchCount = keywords.filter(w => actualText.includes(w)).length;
+                let isCorrect = matchCount >= 1 || (guessedText.length > 5 && actualText.includes(guessedText.substring(0, 5)));
+
+                if (accuser && target && target.status === 'playing' && isCorrect) {
+                    // Bonne réponse ! Le joueur cible est arrêté (sans réinitialiser à zéro le reste, son défi s'arrête là)
+                    accuser.score += 100; 
                     target.score -= 50;  
                     target.currentChallenge = null;
                     target.timeLeft = 0;
                     target.maxTime = 0;
                     target.timerStarted = false;
                     target.status = 'waiting'; 
+                    checkBuzzerConditions();
                     broadcastGameState();
                 } else {
+                    // Mauvaise réponse : pénalité de score et notification de blocage temporaire (30sec)
                     accuser.score -= 25; 
+                    conn.send({ type: 'BUZZ_PENALTY', duration: 30000 });
+                    checkBuzzerConditions();
                     broadcastGameState();
                 }
             }
@@ -441,24 +462,31 @@
             });
         }
 
+        // Le buzzer s'active UNIQUEMENT si au moins un joueur a son chrono lancé (timerStarted === true)
+        function checkBuzzerConditions() {
+            if (gameData.phase !== 'game') {
+                broadcastBuzzerState(false);
+                return;
+            }
+            const activePlayingCount = gameData.players.filter(p => p.status === 'playing' && p.timerStarted).length;
+            if (activePlayingCount > 0) {
+                if (!buzzerActive) {
+                    playSoundBuzzerAlert();
+                    broadcastBuzzerState(true);
+                }
+            } else {
+                if (buzzerActive) {
+                    broadcastBuzzerState(false);
+                }
+            }
+        }
+
         function broadcastBuzzerState(active) {
             buzzerActive = active;
             updateBuzzerUI(active);
             connections.forEach(conn => {
                 conn.send({ type: 'BUZZER_STATE', active: active });
             });
-        }
-
-        function triggerRandomBuzzerEvent() {
-            const delay = Math.floor(Math.random() * 12000) + 8000;
-            if (buzzerEventTimer) clearTimeout(buzzerEventTimer);
-            
-            buzzerEventTimer = setTimeout(() => {
-                if (gameData.phase === 'game') {
-                    playSoundBuzzerAlert();
-                    broadcastBuzzerState(true);
-                }
-            }, delay);
         }
 
         function handleGuestIncomingData(data) {
@@ -471,7 +499,33 @@
                 if (data.active) playSoundBuzzerAlert();
             } else if (data.type === 'BUZZ_WINNER') {
                 handleBuzzWinner(data.winnerId);
+            } else if (data.type === 'BUZZ_PENALTY') {
+                applyBuzzerPenalty(data.duration);
             }
+        }
+
+        function applyBuzzerPenalty(duration) {
+            buzzerBlockedUntil = Date.now() + duration;
+            playSoundFail();
+            updateBuzzerUI(false);
+            
+            if (buzzerBlockInterval) clearInterval(buzzerBlockInterval);
+            buzzerBlockInterval = setInterval(() => {
+                const remaining = buzzerBlockedUntil - Date.now();
+                if (remaining <= 0) {
+                    clearInterval(buzzerBlockInterval);
+                    buzzerBlockInterval = null;
+                    checkBuzzerConditions();
+                } else {
+                    const secs = Math.ceil(remaining / 1000);
+                    const btnBuzzer = document.getElementById('btn-buzzer');
+                    const banner = document.getElementById('buzzer-banner');
+                    if (btnBuzzer && banner) {
+                        banner.innerText = `❌ MAUVAISE IDÉE ! Buzzer bloqué encore ${secs}s`;
+                        banner.className = "text-xs uppercase text-red-400 mb-2 font-black tracking-wider";
+                    }
+                }
+            }, 1000);
         }
 
         function updateBuzzerUI(active) {
@@ -479,26 +533,30 @@
             const banner = document.getElementById('buzzer-banner');
             const msg = document.getElementById('buzzer-status-msg');
 
+            if (Date.now() < buzzerBlockedUntil) {
+                return; // Bloqué par pénalité
+            }
+
             if (active) {
                 btnBuzzer.disabled = false;
                 btnBuzzer.className = "w-full bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-black py-4 rounded-2xl transition uppercase text-base tracking-widest cursor-pointer shadow-xl shadow-yellow-500/50 animate-buzzer glow-yellow";
-                btnBuzzer.innerText = "🚨 BUZZER ACTIVÉ ! CLIQUE ! 🚨";
-                banner.innerText = "🔥 BUZZER ACTIF : C'est le moment de dénoncer ! 🔥";
+                btnBuzzer.innerText = "🚨 UN CHRONO TOURNE ! BUZZ ! 🚨";
+                banner.innerText = "🔥 BUZZER ACTIF : Devine l'objectif d'un joueur ! 🔥";
                 banner.className = "text-xs uppercase text-yellow-400 mb-2 font-black tracking-wider glow-yellow";
-                msg.innerText = "Sois le plus rapide pour dénoncer un joueur en plein défi !";
+                msg.innerText = "Sois le plus rapide pour dénoncer le défi secret d'un joueur en action !";
             } else {
                 btnBuzzer.disabled = true;
                 btnBuzzer.className = "w-full bg-gray-800 text-gray-500 border border-gray-700 font-extrabold py-3 rounded-xl transition uppercase text-sm tracking-widest cursor-not-allowed";
-                btnBuzzer.innerText = "🔴 BUZZER (Inactif)";
-                banner.innerText = "🚨 BUZZER D'ACCUSATION : INACTIF";
+                btnBuzzer.innerText = "🔴 BUZZER (Verrouillé)";
+                banner.innerText = "🚨 BUZZER D'ACCUSATION : EN ATTENTE D'UN DÉFI";
                 banner.className = "text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider";
-                msg.innerText = "Le buzzer s'illumine aléatoirement ou lors des actions pour permettre de dénoncer !";
+                msg.innerText = "Le buzzer s'active automatiquement dès qu'un joueur lance son chrono pour qu'on puisse le piéger !";
                 document.getElementById('accusation-panel').classList.add('hidden');
             }
         }
 
         function hitBuzzer() {
-            if (!buzzerActive) return;
+            if (!buzzerActive || Date.now() < buzzerBlockedUntil) return;
             playSoundSuccess();
 
             if (myRole === 'host') {
@@ -526,44 +584,60 @@
 
         function populateAccuseSelect() {
             const select = document.getElementById('select-accuse');
-            select.innerHTML = '<option value="">Choisir un joueur suspect...</option>' + 
-                gameData.players
-                    .filter(p => p.id !== myId)
-                    .map(p => `<option value="${p.id}">${p.name} (${p.status === 'playing' ? 'En plein défi ⏳' : 'En attente'})</option>`)
-                    .join('');
+            // On ne liste que les joueurs qui ont leur chrono actif (en train de réaliser leur défi)
+            const activePlayers = gameData.players.filter(p => p.id !== myId && p.status === 'playing' && p.timerStarted);
+            
+            select.innerHTML = '<option value="">Choisir un joueur en plein défi...</option>' + 
+                activePlayers.map(p => `<option value="${p.id}">${p.name} (${p.currentChallenge ? p.currentChallenge.cat : 'Défi'})</option>`).join('');
         }
 
         function confirmAccusation() {
             const select = document.getElementById('select-accuse');
             const targetId = select.value;
+            const guessText = document.getElementById('input-guess-text').value.trim();
+
             if (!targetId) {
-                alert("Sélectionne un joueur à dénoncer !");
+                alert("Sélectionne un joueur en plein défi à piéger !");
+                return;
+            }
+            if (!guessText) {
+                alert("Donne ton idée de son objectif secret !");
                 return;
             }
 
             document.getElementById('accusation-panel').classList.add('hidden');
+            document.getElementById('input-guess-text').value = '';
 
             if (myRole === 'host') {
                 const accuser = gameData.players.find(p => p.id === myId);
                 const target = gameData.players.find(p => p.id === targetId);
 
-                if (accuser && target && target.status === 'playing') {
+                const actualText = (target && target.currentChallenge) ? target.currentChallenge.text.toLowerCase() : "";
+                const guessedText = guessText.toLowerCase();
+                const keywords = guessedText.split(' ').filter(w => w.length > 3);
+                let matchCount = keywords.filter(w => actualText.includes(w)).length;
+                let isCorrect = matchCount >= 1 || (guessedText.length > 5 && actualText.includes(guessedText.substring(0, 5)));
+
+                if (accuser && target && target.status === 'playing' && isCorrect) {
                     playSoundSuccess();
-                    accuser.score += 75;
+                    accuser.score += 100;
                     target.score -= 50;
                     target.currentChallenge = null;
                     target.timeLeft = 0;
                     target.maxTime = 0;
                     target.timerStarted = false;
                     target.status = 'waiting';
+                    checkBuzzerConditions();
                     broadcastGameState();
                 } else {
                     playSoundFail();
                     accuser.score -= 25;
+                    applyBuzzerPenalty(30000);
+                    checkBuzzerConditions();
                     broadcastGameState();
                 }
             } else {
-                hostConnection.send({ type: 'ACCUSE', targetId: targetId });
+                hostConnection.send({ type: 'ACCUSE', targetId: targetId, guessText: guessText });
             }
         }
 
@@ -578,6 +652,7 @@
                 p.maxTime = 0;
                 p.timerStarted = false;
             });
+            checkBuzzerConditions();
             broadcastGameState();
         }
 
@@ -644,8 +719,8 @@
                 me.maxTime = randomChallenge.time;
                 me.timerStarted = false;
                 me.status = 'playing';
+                checkBuzzerConditions();
                 broadcastGameState();
-                triggerRandomBuzzerEvent();
             } else {
                 playSoundSpin();
                 hostConnection.send({ type: 'SPIN' });
@@ -658,6 +733,7 @@
 
             if (myRole === 'host') {
                 me.timerStarted = true;
+                checkBuzzerConditions();
                 broadcastGameState();
                 startLocalTimer();
             } else {
@@ -687,6 +763,7 @@
                 me.maxTime = 0;
                 me.timerStarted = false;
                 me.status = 'waiting'; 
+                checkBuzzerConditions();
                 broadcastGameState();
             } else {
                 if (success) playSoundSuccess(); else playSoundFail();
