@@ -165,13 +165,13 @@
                 </div>
             </div>
 
-            <!-- SECTION BUZZER STRATÉGIQUE (SE DÉVERROUILLE QUAND UN CHRONO TOURNE) -->
+            <!-- SECTION BUZZER ALÉATOIRE PENDANT UN DÉFI (10 SECONDES) -->
             <div class="mt-6 pt-4 border-t border-gray-800 text-center">
-                <div id="buzzer-banner" class="text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider">🚨 BUZZER D'ACCUSATION : EN ATTENTE D'UN DÉFI</div>
+                <div id="buzzer-banner" class="text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider">🚨 BUZZER ALÉATOIRE : EN ATTENTE D'UN DÉFI</div>
                 <button id="btn-buzzer" onclick="hitBuzzer()" disabled class="w-full bg-gray-800 text-gray-500 border border-gray-700 font-extrabold py-3 rounded-xl transition uppercase text-sm tracking-widest cursor-not-allowed">
-                    🔴 BUZZER (Verrouillé)
+                    🔴 BUZZER (Inactif)
                 </button>
-                <div id="buzzer-status-msg" class="text-[11px] text-gray-500 mt-1 italic">Le buzzer s'active automatiquement dès qu'un joueur lance son chrono pour qu'on puisse le piéger !</div>
+                <div id="buzzer-status-msg" class="text-[11px] text-gray-500 mt-1 italic">S'active de façon aléatoire pendant 10 secondes lorsqu'un joueur réalise son défi ! (Blocage total 1min30 si 3 échecs d'affilée).</div>
             </div>
 
             <!-- PANNEAU D'ACCUSATION & DEVINETTE DE L'OBJECTIF -->
@@ -224,6 +224,7 @@
         let myPseudo = '';
         let roomCode = '';
         let timerInterval = null;
+        let randomBuzzerTimer = null;
 
         let selectedGameMode = 'table'; 
         let avatarStyle = 'bottts';
@@ -232,15 +233,18 @@
         let myTitle = 'Le/La Soiffard(e)';
         
         let buzzerActive = false;
-        let buzzerBlockedUntil = 0; // Pénalité de blocage du buzzer en ms
+        let buzzerBlockedUntil = 0; // Timestamp de fin de blocage (individuel ou collectif de 1min30)
         let buzzerBlockInterval = null;
+        let consecutiveFails = 0; // Compteur d'échecs consécutifs au buzzer
 
         let gameData = {
             players: [], 
             phase: 'login', 
             round: 1,
             maxRounds: 5,
-            mode: 'table'
+            mode: 'table',
+            consecutiveFails: 0,
+            buzzerBlockedUntil: 0
         };
 
         function changeAvatarStyle() {
@@ -316,7 +320,7 @@
                 conn.on('close', () => {
                     connections = connections.filter(c => c !== conn);
                     gameData.players = gameData.players.filter(p => p.id !== conn.peer);
-                    checkBuzzerConditions();
+                    manageRandomBuzzer();
                     broadcastGameState();
                 });
             });
@@ -386,7 +390,7 @@
                     player.maxTime = randomChallenge.time;
                     player.timerStarted = false;
                     player.status = 'playing';
-                    checkBuzzerConditions();
+                    manageRandomBuzzer();
                     broadcastGameState();
                 }
             }
@@ -394,7 +398,7 @@
                 const player = gameData.players.find(p => p.id === conn.peer);
                 if (player && player.status === 'playing' && !player.timerStarted) {
                     player.timerStarted = true;
-                    checkBuzzerConditions();
+                    manageRandomBuzzer();
                     broadcastGameState();
                 }
             }
@@ -409,13 +413,17 @@
                     player.maxTime = 0;
                     player.timerStarted = false;
                     player.status = 'waiting'; 
-                    checkBuzzerConditions();
+                    manageRandomBuzzer();
                     broadcastGameState();
                 }
             }
             else if (data.type === 'BUZZ') {
-                if (buzzerActive) {
+                if (buzzerActive && Date.now() >= gameData.buzzerBlockedUntil) {
                     buzzerActive = false;
+                    if (randomBuzzerTimer) {
+                        clearTimeout(randomBuzzerTimer);
+                        randomBuzzerTimer = null;
+                    }
                     broadcastBuzzerState(false);
                     connections.forEach(c => c.send({ type: 'BUZZ_WINNER', winnerId: conn.peer }));
                     handleBuzzWinner(conn.peer);
@@ -425,17 +433,16 @@
                 const accuser = gameData.players.find(p => p.id === conn.peer);
                 const target = gameData.players.find(p => p.id === data.targetId);
 
-                // Analyse simple de similarité de mots-clés pour valider l'idée de l'objectif
                 const guessedText = (data.guessText || "").toLowerCase().trim();
                 const actualText = (target && target.currentChallenge) ? target.currentChallenge.text.toLowerCase() : "";
                 
-                // On vérifie si l'utilisateur a tapé quelques mots clés pertinents (plus de 3 caractères)
                 const keywords = guessedText.split(' ').filter(w => w.length > 3);
                 let matchCount = keywords.filter(w => actualText.includes(w)).length;
                 let isCorrect = matchCount >= 1 || (guessedText.length > 5 && actualText.includes(guessedText.substring(0, 5)));
 
                 if (accuser && target && target.status === 'playing' && isCorrect) {
-                    // Bonne réponse ! Le joueur cible est arrêté (sans réinitialiser à zéro le reste, son défi s'arrête là)
+                    // Bonne accusation : on réinitialise les échecs consécutifs
+                    gameData.consecutiveFails = 0;
                     accuser.score += 100; 
                     target.score -= 50;  
                     target.currentChallenge = null;
@@ -443,13 +450,23 @@
                     target.maxTime = 0;
                     target.timerStarted = false;
                     target.status = 'waiting'; 
-                    checkBuzzerConditions();
+                    manageRandomBuzzer();
                     broadcastGameState();
                 } else {
-                    // Mauvaise réponse : pénalité de score et notification de blocage temporaire (30sec)
+                    // Mauvaise accusation : échec !
                     accuser.score -= 25; 
-                    conn.send({ type: 'BUZZ_PENALTY', duration: 30000 });
-                    checkBuzzerConditions();
+                    gameData.consecutiveFails++;
+
+                    if (gameData.consecutiveFails >= 3) {
+                        // 3 échecs consécutifs => Blocage total de 1 min 30 (90000 ms) pour tout le monde
+                        gameData.buzzerBlockedUntil = Date.now() + 90000;
+                        gameData.consecutiveFails = 0;
+                        connections.forEach(c => c.send({ type: 'GLOBAL_BUZZ_PENALTY', duration: 90000 }));
+                        applyGlobalBuzzerPenalty(90000);
+                    } else {
+                        conn.send({ type: 'BUZZ_PENALTY', duration: 30000 });
+                    }
+                    manageRandomBuzzer();
                     broadcastGameState();
                 }
             }
@@ -462,19 +479,44 @@
             });
         }
 
-        // Le buzzer s'active UNIQUEMENT si au moins un joueur a son chrono lancé (timerStarted === true)
-        function checkBuzzerConditions() {
+        function manageRandomBuzzer() {
             if (gameData.phase !== 'game') {
+                if (randomBuzzerTimer) clearTimeout(randomBuzzerTimer);
                 broadcastBuzzerState(false);
                 return;
             }
+
+            // Si le buzzer global est bloqué (par ex 1min30), on ne fait rien
+            if (Date.now() < gameData.buzzerBlockedUntil) {
+                return;
+            }
+
             const activePlayingCount = gameData.players.filter(p => p.status === 'playing' && p.timerStarted).length;
-            if (activePlayingCount > 0) {
-                if (!buzzerActive) {
-                    playSoundBuzzerAlert();
-                    broadcastBuzzerState(true);
+            
+            if (activePlayingCount > 0 && !buzzerActive && !randomBuzzerTimer) {
+                const randomDelay = (Math.floor(Math.random() * 10) + 5) * 1000;
+                
+                randomBuzzerTimer = setTimeout(() => {
+                    randomBuzzerTimer = null;
+                    if (gameData.phase === 'game' && gameData.players.some(p => p.status === 'playing' && p.timerStarted) && Date.now() >= gameData.buzzerBlockedUntil) {
+                        buzzerActive = true;
+                        playSoundBuzzerAlert();
+                        broadcastBuzzerState(true);
+
+                        setTimeout(() => {
+                            if (buzzerActive) {
+                                buzzerActive = false;
+                                broadcastBuzzerState(false);
+                                manageRandomBuzzer();
+                            }
+                        }, 10000);
+                    }
+                }, randomDelay);
+            } else if (activePlayingCount === 0) {
+                if (randomBuzzerTimer) {
+                    clearTimeout(randomBuzzerTimer);
+                    randomBuzzerTimer = null;
                 }
-            } else {
                 if (buzzerActive) {
                     broadcastBuzzerState(false);
                 }
@@ -501,6 +543,8 @@
                 handleBuzzWinner(data.winnerId);
             } else if (data.type === 'BUZZ_PENALTY') {
                 applyBuzzerPenalty(data.duration);
+            } else if (data.type === 'GLOBAL_BUZZ_PENALTY') {
+                applyGlobalBuzzerPenalty(data.duration);
             }
         }
 
@@ -508,20 +552,33 @@
             buzzerBlockedUntil = Date.now() + duration;
             playSoundFail();
             updateBuzzerUI(false);
-            
+            startBuzzerBlockCountdown();
+        }
+
+        function applyGlobalBuzzerPenalty(duration) {
+            gameData.buzzerBlockedUntil = Date.now() + duration;
+            buzzerBlockedUntil = gameData.buzzerBlockedUntil;
+            playSoundFail();
+            updateBuzzerUI(false);
+            startBuzzerBlockCountdown();
+        }
+
+        function startBuzzerBlockCountdown() {
             if (buzzerBlockInterval) clearInterval(buzzerBlockInterval);
             buzzerBlockInterval = setInterval(() => {
-                const remaining = buzzerBlockedUntil - Date.now();
+                const targetTime = Math.max(buzzerBlockedUntil, gameData.buzzerBlockedUntil);
+                const remaining = targetTime - Date.now();
                 if (remaining <= 0) {
                     clearInterval(buzzerBlockInterval);
                     buzzerBlockInterval = null;
-                    checkBuzzerConditions();
+                    manageRandomBuzzer();
                 } else {
-                    const secs = Math.ceil(remaining / 1000);
-                    const btnBuzzer = document.getElementById('btn-buzzer');
+                    const mins = Math.floor(remaining / 60000);
+                    const secs = Math.ceil((remaining % 60000) / 1000);
+                    const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
                     const banner = document.getElementById('buzzer-banner');
-                    if (btnBuzzer && banner) {
-                        banner.innerText = `❌ MAUVAISE IDÉE ! Buzzer bloqué encore ${secs}s`;
+                    if (banner) {
+                        banner.innerText = `❌ 3 ÉCHECS ! Buzzer bloqué globalement (${timeStr})`;
                         banner.className = "text-xs uppercase text-red-400 mb-2 font-black tracking-wider";
                     }
                 }
@@ -533,34 +590,41 @@
             const banner = document.getElementById('buzzer-banner');
             const msg = document.getElementById('buzzer-status-msg');
 
-            if (Date.now() < buzzerBlockedUntil) {
-                return; // Bloqué par pénalité
+            const globalBlocked = Date.now() < gameData.buzzerBlockedUntil;
+            const personalBlocked = Date.now() < buzzerBlockedUntil;
+
+            if (globalBlocked || personalBlocked) {
+                return; // En cours de blocage
             }
 
             if (active) {
                 btnBuzzer.disabled = false;
                 btnBuzzer.className = "w-full bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-black py-4 rounded-2xl transition uppercase text-base tracking-widest cursor-pointer shadow-xl shadow-yellow-500/50 animate-buzzer glow-yellow";
-                btnBuzzer.innerText = "🚨 UN CHRONO TOURNE ! BUZZ ! 🚨";
-                banner.innerText = "🔥 BUZZER ACTIF : Devine l'objectif d'un joueur ! 🔥";
+                btnBuzzer.innerText = "🚨 LE BUZZER EST OUVERT (10s) ! 🚨";
+                banner.innerText = "🔥 ALERTE : BUZZER ACTIF PENDANT 10 SECONDES ! 🔥";
                 banner.className = "text-xs uppercase text-yellow-400 mb-2 font-black tracking-wider glow-yellow";
-                msg.innerText = "Sois le plus rapide pour dénoncer le défi secret d'un joueur en action !";
+                msg.innerText = "Sois le plus rapide ! Si tu touches le buzzer, tu bloques les autres et tu peux piéger la cible.";
             } else {
                 btnBuzzer.disabled = true;
                 btnBuzzer.className = "w-full bg-gray-800 text-gray-500 border border-gray-700 font-extrabold py-3 rounded-xl transition uppercase text-sm tracking-widest cursor-not-allowed";
-                btnBuzzer.innerText = "🔴 BUZZER (Verrouillé)";
-                banner.innerText = "🚨 BUZZER D'ACCUSATION : EN ATTENTE D'UN DÉFI";
+                btnBuzzer.innerText = "🔴 BUZZER (Inactif)";
+                banner.innerText = "🚨 BUZZER ALÉATOIRE : EN ATTENTE D'UN DÉFI";
                 banner.className = "text-xs uppercase text-gray-400 mb-2 font-bold tracking-wider";
-                msg.innerText = "Le buzzer s'active automatiquement dès qu'un joueur lance son chrono pour qu'on puisse le piéger !";
+                msg.innerText = "S'active de façon aléatoire pendant 10 secondes lorsqu'un joueur réalise son défi ! (Blocage total 1min30 si 3 échecs d'affilée).";
                 document.getElementById('accusation-panel').classList.add('hidden');
             }
         }
 
         function hitBuzzer() {
-            if (!buzzerActive || Date.now() < buzzerBlockedUntil) return;
+            if (!buzzerActive || Date.now() < buzzerBlockedUntil || Date.now() < gameData.buzzerBlockedUntil) return;
             playSoundSuccess();
 
             if (myRole === 'host') {
                 buzzerActive = false;
+                if (randomBuzzerTimer) {
+                    clearTimeout(randomBuzzerTimer);
+                    randomBuzzerTimer = null;
+                }
                 broadcastBuzzerState(false);
                 handleBuzzWinner(myId);
             } else {
@@ -584,7 +648,6 @@
 
         function populateAccuseSelect() {
             const select = document.getElementById('select-accuse');
-            // On ne liste que les joueurs qui ont leur chrono actif (en train de réaliser leur défi)
             const activePlayers = gameData.players.filter(p => p.id !== myId && p.status === 'playing' && p.timerStarted);
             
             select.innerHTML = '<option value="">Choisir un joueur en plein défi...</option>' + 
@@ -620,6 +683,7 @@
 
                 if (accuser && target && target.status === 'playing' && isCorrect) {
                     playSoundSuccess();
+                    gameData.consecutiveFails = 0;
                     accuser.score += 100;
                     target.score -= 50;
                     target.currentChallenge = null;
@@ -627,13 +691,22 @@
                     target.maxTime = 0;
                     target.timerStarted = false;
                     target.status = 'waiting';
-                    checkBuzzerConditions();
+                    manageRandomBuzzer();
                     broadcastGameState();
                 } else {
                     playSoundFail();
                     accuser.score -= 25;
-                    applyBuzzerPenalty(30000);
-                    checkBuzzerConditions();
+                    gameData.consecutiveFails++;
+
+                    if (gameData.consecutiveFails >= 3) {
+                        gameData.buzzerBlockedUntil = Date.now() + 90000;
+                        gameData.consecutiveFails = 0;
+                        connections.forEach(c => c.send({ type: 'GLOBAL_BUZZ_PENALTY', duration: 90000 }));
+                        applyGlobalBuzzerPenalty(90000);
+                    } else {
+                        applyBuzzerPenalty(30000);
+                    }
+                    manageRandomBuzzer();
                     broadcastGameState();
                 }
             } else {
@@ -644,6 +717,8 @@
         function startParty() {
             gameData.phase = 'game';
             gameData.round = 1;
+            gameData.consecutiveFails = 0;
+            gameData.buzzerBlockedUntil = 0;
             gameData.players.forEach(p => {
                 p.score = 0;
                 p.status = 'waiting';
@@ -652,7 +727,7 @@
                 p.maxTime = 0;
                 p.timerStarted = false;
             });
-            checkBuzzerConditions();
+            manageRandomBuzzer();
             broadcastGameState();
         }
 
@@ -719,7 +794,7 @@
                 me.maxTime = randomChallenge.time;
                 me.timerStarted = false;
                 me.status = 'playing';
-                checkBuzzerConditions();
+                manageRandomBuzzer();
                 broadcastGameState();
             } else {
                 playSoundSpin();
@@ -733,7 +808,7 @@
 
             if (myRole === 'host') {
                 me.timerStarted = true;
-                checkBuzzerConditions();
+                manageRandomBuzzer();
                 broadcastGameState();
                 startLocalTimer();
             } else {
@@ -763,7 +838,7 @@
                 me.maxTime = 0;
                 me.timerStarted = false;
                 me.status = 'waiting'; 
-                checkBuzzerConditions();
+                manageRandomBuzzer();
                 broadcastGameState();
             } else {
                 if (success) playSoundSuccess(); else playSoundFail();
