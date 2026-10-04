@@ -23,7 +23,7 @@
 
     <header class="w-full max-w-md text-center py-4">
         <h1 class="text-4xl font-900 tracking-wider text-red-500 uppercase glow-red">🔥 Le Dîner Infernal 🔥</h1>
-        <p class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Édition Soirée • Chronos Autonomes</p>
+        <p id="mode-subtitle" class="text-xs text-gray-400 mt-1 uppercase tracking-widest">Choisis ton mode de jeu</p>
     </header>
 
     <main id="app" class="w-full max-w-md flex-1 flex flex-col justify-center items-center">
@@ -36,6 +36,16 @@
                     <label class="block text-xs uppercase text-gray-400 mb-1">Ton Pseudo</label>
                     <input type="text" id="input-pseudo" placeholder="Ex: Michou..." class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 font-semibold" maxlength="15">
                 </div>
+
+                <!-- SÉLECTEUR DE MODE DE JEU POUR L'HÔTE -->
+                <div>
+                    <label class="block text-xs uppercase text-gray-400 mb-1">Mode de jeu (Si tu créé le salon)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="setGameMode('table')" id="btn-mode-table" class="bg-red-600 border border-red-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">🍽️ À Table</button>
+                        <button type="button" onclick="setGameMode('party')" id="btn-mode-party" class="bg-gray-800 border border-gray-700 text-gray-400 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer">🎉 Soirée / Apéro</button>
+                    </div>
+                </div>
+
                 <button onclick="hostGame()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-red-600/30 text-sm cursor-pointer">Créer un Salon</button>
 
                 <div class="relative flex py-2 items-center">
@@ -51,20 +61,47 @@
             </div>
         </div>
 
-        <!-- ÉCRAN 2 : LOBBY -->
+        <!-- ÉCRAN 2 : LOBBY & CRÉATION DE PERSONNAGE -->
         <div id="screen-lobby" class="w-full bg-gray-900/80 border border-red-500/30 rounded-2xl p-6 glow-box backdrop-blur-md hidden text-center">
             <h2 class="text-xs uppercase tracking-widest text-gray-400 mb-1">Code du Salon</h2>
-            <div id="display-room-code" class="text-5xl font-mono font-black text-red-500 tracking-widest mb-6">----</div>
+            <div id="display-room-code" class="text-5xl font-mono font-black text-red-500 tracking-widest mb-2">----</div>
+            <div id="display-room-mode" class="inline-block bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-bold px-3 py-1 rounded-full mb-4">Mode : 🍽️ À Table</div>
 
-            <div class="bg-gray-800/60 rounded-xl p-4 mb-6">
+            <!-- CUSTOMISATION DU PERSO AVEC AVATAR VECTORIEL DICEBEAR -->
+            <div class="bg-gray-800/80 border border-red-500/20 rounded-xl p-4 mb-4 text-left">
+                <h3 class="text-xs uppercase font-bold text-red-400 mb-2">🎭 Ton Personnage</h3>
+                
+                <div class="flex items-center space-x-4 mb-3">
+                    <img id="my-avatar-preview" src="" alt="Avatar" class="w-16 h-16 rounded-2xl bg-gray-900 border-2 border-red-500 p-1 object-cover">
+                    <div class="flex-1">
+                        <button type="button" onclick="randomizeAvatar()" class="w-full bg-gray-900 hover:bg-gray-700 border border-gray-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer mb-1">🎲 Changer d'avatar</button>
+                        <div class="text-[10px] text-gray-400">Clique pour générer un nouveau look vectoriel unique.</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Ton Titre</label>
+                    <select id="select-title" onchange="updateMyProfile()" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
+                        <option value="Le Soiffard">Le Soiffard 🍷</option>
+                        <option value="Le Vainqueur masqué">Le Vainqueur masqué 🎭</option>
+                        <option value="La Terreur des tables">La Terreur des tables 💀</option>
+                        <option value="Le Gourmand">Le Gourmand 🍕</option>
+                        <option value="Le Stratège">Le Stratège 🃏</option>
+                        <option value="L'Anarchiste">L'Anarchiste 🔥</option>
+                        <option value="Le VIP">Le VIP 👑</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="bg-gray-800/60 rounded-xl p-4 mb-4">
                 <h3 class="text-sm font-bold text-gray-300 mb-2">Joueurs connectés (<span id="player-count">0</span>)</h3>
-                <ul id="players-list" class="space-y-2 max-h-40 overflow-y-auto text-sm"></ul>
+                <ul id="players-list" class="space-y-2 max-h-36 overflow-y-auto text-sm"></ul>
             </div>
 
             <div id="host-controls" class="hidden">
-                <button onclick="startParty()" class="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white font-extrabold py-4 rounded-xl transition shadow-lg shadow-red-600/40 text-lg uppercase tracking-wider animate-pulse cursor-pointer">Lancer le Dîner 🔥</button>
+                <button onclick="startParty()" class="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white font-extrabold py-3 rounded-xl transition shadow-lg shadow-red-600/40 text-base uppercase tracking-wider animate-pulse cursor-pointer">Lancer la Partie 🔥</button>
             </div>
-            <div id="guest-waiting" class="text-gray-400 text-sm italic">En attente que l'hôte lance la partie...</div>
+            <div id="guest-waiting" class="text-gray-400 text-xs italic">En attente que l'hôte lance la partie...</div>
         </div>
 
         <!-- ÉCRAN 3 : JEU -->
@@ -104,7 +141,7 @@
                     <p id="challenge-text" class="text-base font-semibold text-white my-3">Description...</p>
                     
                     <!-- Bouton pour que le joueur déclenche son chrono quand il veut -->
-                    <button id="btn-start-timer" onclick="startMyTimerManually()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition text-sm shadow-md cursor-pointer mb-2">▶️ Lancer mon chrono (2 min)</button>
+                    <button id="btn-start-timer" onclick="startMyTimerManually()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition text-sm shadow-md cursor-pointer mb-2">▶️ Lancer mon chrono</button>
                     <p class="text-xs text-gray-400 italic">Lis ta consigne, puis clique quand tu es prêt à appliquer le défi.</p>
                 </div>
 
@@ -139,7 +176,7 @@
         <!-- ÉCRAN 4 : PODIUM & RÉSULTATS -->
         <div id="screen-podium" class="w-full bg-gray-900/90 border border-red-500/50 rounded-2xl p-6 glow-box backdrop-blur-md hidden text-center">
             <h2 class="text-3xl font-black text-red-500 uppercase glow-red mb-2">Classement Final 🏆</h2>
-            <p class="text-xs text-gray-400 mb-4">Le dîner infernal prend fin ici !</p>
+            <p class="text-xs text-gray-400 mb-4">La partie prend fin ici !</p>
             <div id="podium-list" class="space-y-3 mb-6 text-left"></div>
             <button onclick="location.reload()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition uppercase text-sm cursor-pointer">Recommencer une partie</button>
         </div>
@@ -158,45 +195,60 @@
         let myPseudo = '';
         let roomCode = '';
         let timerInterval = null;
+
+        let selectedGameMode = 'table'; // 'table' ou 'party'
+        let myAvatarSeed = 'player_' + Math.floor(Math.random() * 10000);
+        let myAvatarUrl = '';
+        let myTitle = 'Le Soiffard';
         
         let gameData = {
             players: [], 
             phase: 'login', 
             round: 1,
-            maxRounds: 5
+            maxRounds: 5,
+            mode: 'table'
         };
 
-        const challenges = [
-            { cat: '👥 Social', text: 'Pendant 2 minutes, donne un surnom affectueux (ex: "Mon p’tit chou", "Ma biche") à chaque fois que tu t’adresses au joueur à ta gauche.', time: 120 },
-            { cat: '👥 Social', text: 'Pendant 90 secondes, fais comme si tu étais le garde du corps personnel du joueur d’en face.', time: 90 },
-            { cat: '🗣️ Parole', text: 'Pendant 90 secondes, finis obligatoirement toutes tes phrases par "J\'adore les moules".', time: 90 },
-            { cat: '👥 Social', text: 'Pendant 2 minutes, chaque fois que quelqu’un prononce le mot "oui", tu dois applaudir discrètement.', time: 120 },
-            { cat: '🗣️ Parole', text: 'Pendant 60 secondes, parle uniquement en chuchotant de grands secrets.', time: 60 },
-            { cat: '👥 Social', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120 },
-            { cat: '🗣️ Parole', text: 'Pendant 90 secondes, réponds à chaque question par un miaulement ou un son d’animal discret.', time: 90 },
-            { cat: '👥 Social', text: 'Pendant 2 minutes, demande l’avis du joueur à ta droite sur absolument TOUT ce que tu dis.', time: 120 },
-            { cat: '🗣️ Parole', text: 'Pendant 60 secondes, prends une voix de robot en panne.', time: 60 },
-            { cat: '👥 Social', text: 'Pendant 90 secondes, adopte une posture ultra-détendue les mains derrière la tête.', time: 90 },
-            { cat: '🗣️ Parole', text: 'Parle avec un accent québécois ou belge prononcé pendant 90 secondes.', time: 90 },
-            { cat: '👥 Social', text: 'Pendant 2 minutes, interdis-toi de croiser les bras ou de toucher ton visage.', time: 120 },
-            { cat: '🗣️ Parole', text: 'Finis tes 5 prochaines phrases par le mot "Wesh".', time: 60 },
-            { cat: '👥 Social', text: 'Pendant 90 secondes, fais mine de traduire tout ce que dit ton voisin en langage imaginaire.', time: 90 },
-            { cat: '🗣️ Parole', text: 'Dis "C’est incroyable!" avec un enthousiasme exagéré toutes les 20 secondes.', time: 90 },
-            { cat: '👥 Social', text: 'Pendant 2 minutes, trouve une excuse polie pour changer de sujet dès qu’on parle météo.', time: 120 },
-            { cat: '🗣️ Parole', text: 'Insère le mot "Patate" au milieu de tes phrases pendant 60 secondes.', time: 60 },
-            { cat: '👥 Social', text: 'Pendant 90 secondes, fais des compliments très recherchés sur la posture des autres.', time: 90 },
-            { cat: '🗣️ Parole', text: 'Prends un accent aristocratique du 18ème siècle pendant 90 secondes.', time: 90 },
-            { cat: '👥 Social', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un rit.', time: 120 },
-            { cat: '🎒 Objet', text: 'Pendant 90 secondes, garde une serviette de table posée sur ton épaule.', time: 90 },
-            { cat: '🎒 Objet', text: 'Pendant 2 minutes, tiens ton verre de la main gauche uniquement.', time: 120 },
-            { cat: '🎒 Objet', text: 'Pendant 90 secondes, mets ton téléphone face contre table et interdis-toi de le toucher.', time: 90 },
-            { cat: '🎒 Objet', text: 'Pendant 2 minutes, garde un couvert posé bien à l’horizontale devant ton assiette.', time: 120 },
-            { cat: '🎒 Objet', text: 'Pendant 90 secondes, fais glisser ta serviette pliée vers ton voisin de gauche.', time: 90 },
-            { cat: '🔥 Piquant', text: 'Pendant 2 minutes, raconte des anecdotes de vacances totalement inventées avec un sérieux de marbre.', time: 120 },
-            { cat: '🔥 Piquant', text: 'Pendant 90 secondes, soutiens mordicus qu’on est un mardi alors qu’on est un autre jour.', time: 90 },
-            { cat: '🔥 Piquant', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique extrêmement exigent.', time: 120 },
-            { cat: '🔥 Piquant', text: 'Pendant 90 secondes, donne un faux conseil de vie très sérieux à la table.', time: 90 }
-        ];
+        // --- GESTION DES AVATARS VECTORIELS (DICEBEAR) ---
+        function randomizeAvatar() {
+            myAvatarSeed = 'seed_' + Math.random().toString(36).substring(7);
+            updateAvatarPreview();
+            updateMyProfile();
+        }
+
+        function updateAvatarPreview() {
+            myAvatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${myAvatarSeed}`;
+            const preview = document.getElementById('my-avatar-preview');
+            if (preview) preview.src = myAvatarUrl;
+        }
+
+        function setGameMode(mode) {
+            selectedGameMode = mode;
+            const btnTable = document.getElementById('btn-mode-table');
+            const btnParty = document.getElementById('btn-mode-party');
+            
+            if (mode === 'table') {
+                btnTable.className = "bg-red-600 border border-red-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer";
+                btnParty.className = "bg-gray-800 border border-gray-700 text-gray-400 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer";
+            } else {
+                btnParty.className = "bg-red-600 border border-red-500 text-white font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer";
+                btnTable.className = "bg-gray-800 border border-gray-700 text-gray-400 font-bold py-2.5 rounded-xl text-xs uppercase transition cursor-pointer";
+            }
+        }
+
+        function updateMyProfile() {
+            myTitle = document.getElementById('select-title').value;
+            const me = gameData.players.find(p => p.id === myId);
+            if (me) {
+                me.avatarUrl = myAvatarUrl;
+                me.title = myTitle;
+                if (myRole === 'host') {
+                    broadcastGameState();
+                } else if (hostConnection && hostConnection.open) {
+                    hostConnection.send({ type: 'UPDATE_PROFILE', avatarUrl: myAvatarUrl, title: myTitle });
+                }
+            }
+        }
 
         function hostGame() {
             myPseudo = document.getElementById('input-pseudo').value.trim();
@@ -205,12 +257,13 @@
             roomCode = Math.floor(1000 + Math.random() * 9000).toString();
             myRole = 'host';
             myId = 'diner_' + roomCode;
+            gameData.mode = selectedGameMode;
 
             peer = new Peer(myId);
 
             peer.on('open', (id) => {
                 myId = id;
-                gameData.players = [{ id: myId, name: myPseudo, score: 0, status: 'waiting', currentChallenge: null, timeLeft: 0, maxTime: 0, timerStarted: false }];
+                gameData.players = [{ id: myId, name: myPseudo, avatarUrl: myAvatarUrl, title: myTitle, score: 0, status: 'waiting', currentChallenge: null, timeLeft: 0, maxTime: 0, timerStarted: false }];
                 gameData.phase = 'lobby';
                 updateScreen();
             });
@@ -245,7 +298,7 @@
                 hostConnection = peer.connect('diner_' + roomCode);
 
                 hostConnection.on('open', () => {
-                    hostConnection.send({ type: 'JOIN', name: myPseudo, id: myId });
+                    hostConnection.send({ type: 'JOIN', name: myPseudo, id: myId, avatarUrl: myAvatarUrl, title: myTitle });
                 });
 
                 hostConnection.on('data', (data) => {
@@ -259,14 +312,34 @@
                 if (!connections.includes(conn)) connections.push(conn);
                 const existing = gameData.players.find(p => p.id === data.id);
                 if (!existing) {
-                    gameData.players.push({ id: data.id, name: data.name, score: 0, status: 'waiting', currentChallenge: null, timeLeft: 0, maxTime: 0, timerStarted: false });
+                    gameData.players.push({ 
+                        id: data.id, 
+                        name: data.name, 
+                        avatarUrl: data.avatarUrl || myAvatarUrl, 
+                        title: data.title || 'Le Soiffard', 
+                        score: 0, 
+                        status: 'waiting', 
+                        currentChallenge: null, 
+                        timeLeft: 0, 
+                        maxTime: 0, 
+                        timerStarted: false 
+                    });
                 }
                 broadcastGameState();
+            }
+            else if (data.type === 'UPDATE_PROFILE') {
+                const player = gameData.players.find(p => p.id === conn.peer);
+                if (player) {
+                    player.avatarUrl = data.avatarUrl;
+                    player.title = data.title;
+                    broadcastGameState();
+                }
             }
             else if (data.type === 'SPIN') {
                 const player = gameData.players.find(p => p.id === conn.peer);
                 if (player && player.status === 'waiting') {
-                    const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+                    const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
+                    const randomChallenge = pool[Math.floor(Math.random() * pool.length)];
                     player.currentChallenge = randomChallenge;
                     player.timeLeft = randomChallenge.time;
                     player.maxTime = randomChallenge.time;
@@ -400,7 +473,8 @@
 
             if (myRole === 'host') {
                 playSoundSpin();
-                const randomChallenge = challenges[Math.floor(Math.random() * challenges.length)];
+                const pool = (gameData.mode === 'table') ? challengesTable : challengesParty;
+                const randomChallenge = pool[Math.floor(Math.random() * pool.length)];
                 me.currentChallenge = randomChallenge;
                 me.timeLeft = randomChallenge.time;
                 me.maxTime = randomChallenge.time;
@@ -506,10 +580,18 @@
 
             if (gameData.phase === 'lobby') {
                 document.getElementById('display-room-code').innerText = roomCode;
+                document.getElementById('display-room-mode').innerText = gameData.mode === 'table' ? 'Mode : 🍽️ À Table' : 'Mode : 🎉 Soirée / Apéro';
                 document.getElementById('player-count').innerText = gameData.players.length;
+                
                 document.getElementById('players-list').innerHTML = gameData.players.map(p => `
                     <li class="bg-gray-800 py-2 px-3 rounded-lg text-white font-medium flex justify-between items-center">
-                        <span>${p.name}</span>
+                        <div class="flex items-center space-x-2">
+                            <img src="${p.avatarUrl}" class="w-8 h-8 rounded-xl bg-gray-900 border border-red-500 object-cover">
+                            <div>
+                                <div class="font-bold text-sm">${p.name}</div>
+                                <div class="text-[10px] text-gray-400 italic">${p.title || 'Le Soiffard'}</div>
+                            </div>
+                        </div>
                         ${p.id === gameData.players[0].id ? '<span class="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded">Hôte</span>' : ''}
                     </li>
                 `).join('');
@@ -534,15 +616,13 @@
                     document.getElementById('player-status-title').innerText = "Prêt pour un tour ?";
                     document.getElementById('wheel-text').innerText = "TOURNE TA ROUE";
                 } else if (status === 'playing') {
-                    document.getElementById('player-status-title').innerText = me.timerStarted ? "Défi Long en cours ⏳" : "Défi pioché (En attente)";
+                    document.getElementById('player-status-title').innerText = me.timerStarted ? "Défi en cours ⏳" : "Défi pioché (En attente)";
                     document.getElementById('challenge-category').innerText = me.currentChallenge.cat;
                     document.getElementById('challenge-text').innerText = me.currentChallenge.text;
                     
                     updateTimerDisplayUI(me.timeLeft, me.maxTime, me.timerStarted);
                     
-                    if (me.timerStarted && !timerInterval && myRole !== 'host') {
-                        startLocalTimer();
-                    } else if (me.timerStarted && !timerInterval && myRole === 'host') {
+                    if (me.timerStarted && !timerInterval) {
                         startLocalTimer();
                     }
                 }
@@ -558,17 +638,23 @@
 
                 document.getElementById('live-scores').innerHTML = gameData.players.map((p) => {
                     let badge = '';
-                    if (p.status === 'waiting') badge = '<span class="text-xs text-yellow-400">Prêt à tourner 🎡</span>';
+                    if (p.status === 'waiting') badge = '<span class="text-xs text-yellow-400">Prêt 🎡</span>';
                     else if (p.status === 'playing') {
-                        badge = p.timerStarted ? '<span class="text-xs text-indigo-400 font-bold">Chrono actif ⏳</span>' : '<span class="text-xs text-blue-300">A pioché (En attente)</span>';
+                        badge = p.timerStarted ? '<span class="text-xs text-indigo-400 font-bold">Actif ⏳</span>' : '<span class="text-xs text-blue-300">En attente</span>';
                     }
 
                     return `
-                        <div class="flex justify-between items-center text-gray-300 bg-gray-800/40 px-2 py-1.5 rounded">
-                            <span>${p.name} ${p.id === myId ? '(Toi)' : ''}</span>
+                        <div class="flex justify-between items-center text-gray-300 bg-gray-800/40 px-2 py-2 rounded">
+                            <div class="flex items-center space-x-2">
+                                <img src="${p.avatarUrl}" class="w-6 h-6 rounded-lg bg-gray-900 border border-red-500 object-cover">
+                                <div>
+                                    <span class="font-bold text-xs">${p.name} ${p.id === myId ? '(Toi)' : ''}</span>
+                                    <div class="text-[9px] text-gray-400">${p.title || ''}</div>
+                                </div>
+                            </div>
                             <div class="flex items-center space-x-2">
                                 ${badge}
-                                <span class="font-bold text-red-400">${p.score} pts</span>
+                                <span class="font-bold text-red-400 text-xs">${p.score} pts</span>
                             </div>
                         </div>
                     `;
@@ -583,8 +669,14 @@
                 const sorted = [...gameData.players].sort((a,b) => b.score - a.score);
                 document.getElementById('podium-list').innerHTML = sorted.map((p, i) => `
                     <div class="flex justify-between items-center bg-gray-800 p-3 rounded-xl border ${i === 0 ? 'border-yellow-500 bg-yellow-950/20' : 'border-gray-700'}">
-                        <span class="font-bold text-white">#${i + 1} ${p.name}</span>
-                        <span class="font-black text-red-400">${p.score} pts</span>
+                        <div class="flex items-center space-x-3">
+                            <img src="${p.avatarUrl}" class="w-10 h-10 rounded-xl bg-gray-900 border border-red-500 object-cover">
+                            <div>
+                                <div class="font-bold text-white">#${i + 1} ${p.name}</div>
+                                <div class="text-xs text-gray-400 italic">${p.title || ''}</div>
+                            </div>
+                        </div>
+                        <span class="font-black text-red-400 text-lg">${p.score} pts</span>
                     </div>
                 `).join('');
             }
@@ -594,6 +686,48 @@
         function playSoundSuccess() { try { const s = new Tone.Synth().toDestination(); s.triggerAttackRelease("G4", "8n"); setTimeout(()=>s.triggerAttackRelease("C5", "4n"), 100); } catch(e){} }
         function playSoundFail() { try { new Tone.Synth().toDestination().triggerAttackRelease("E3", "4n"); } catch(e){} }
         function triggerConfetti() { try { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); } catch(e){} }
+
+        // Initialisation de l'avatar au chargement
+        updateAvatarPreview();
+
+
+        // ==========================================
+        // LISTE DES DÉFIS : VERSION "À TABLE"
+        // ==========================================
+        const challengesTable = [
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, garde ta fourchette tenue exclusivement de la main gauche.', time: 90 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, bois une gorgée d’eau à chaque fois que quelqu’un prononce le mot "oui".', time: 120 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ta serviette de table pliée sur ton épaule droite.', time: 90 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, fais semblant d’être un critique gastronomique ultra-exigeant sur chaque plat.', time: 120 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, interdis-toi de poser tes coudes sur la table en adoptant une posture ultra-rigide.', time: 90 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, donne un surnom affectueux (ex: "Mon p’tit chou") à chaque fois que tu t’adresses au joueur à ta gauche.', time: 120 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, refuse poliment de toucher ton verre tant que ton voisin de droite ne t’a pas donné l’autorisation.', time: 90 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, chaque fin de phrase doit se terminer par un petit raclement de gorge aristocratique.', time: 120 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 60 secondes, prends une voix de majordome obséquieux pour répondre à ton voisin d’en face.', time: 60 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, pose ton couvert bien à l’horizontale après chaque bouchée.', time: 90 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 2 minutes, demande l’avis du joueur à ta droite sur absolument TOUT ce que tu manges ou bois.', time: 120 },
+            { cat: '🍽️ Table & Repas', text: 'Pendant 90 secondes, fais comme si ton plat était brûlant et souffle dessus exagérément avant chaque bouchée.', time: 90 }
+        ];
+
+
+        // ==========================================
+        // LISTE DES DÉFIS : VERSION "SOIRÉE / APÉRO"
+        // (Sans couverts ni nourriture)
+        // ==========================================
+        const challengesParty = [
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, finis obligatoirement toutes tes phrases par "C\'est la vie de mon chat".', time: 90 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, chaque fois que quelqu’un rit, tu dois applaudir discrètement avec enthousiasme.', time: 120 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 60 secondes, parle uniquement en chuchotant de grands secrets.', time: 60 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, réponds à chaque question par un miaulement ou un son d’animal discret.', time: 90 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, interdis-toi de croiser les bras ou de toucher ton visage.', time: 120 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, prends une voix de robot en panne.', time: 90 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, insère le mot "Patate" au milieu de tes phrases sans que ça ne paraisse bizarre.', time: 120 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, adopte une posture ultra-détendue les mains derrière la tête.', time: 90 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, pose ton téléphone face contre table et interdis-toi de le regarder ou de le toucher.', time: 120 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, soutiens mordicus qu’on est un autre jour de la semaine avec un sérieux de marbre.', time: 90 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 2 minutes, fais mine de traduire tout ce que dit ton voisin en langage imaginaire.', time: 120 },
+            { cat: '🎉 Soirée & Apéro', text: 'Pendant 90 secondes, prends un accent québécois ou belge très prononcé.', time: 90 }
+        ];
     </script>
 </body>
 </html>
